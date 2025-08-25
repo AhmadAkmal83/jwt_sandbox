@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20250820-0000-create-schemas
+      author: team_backend
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS jwt_core;
+
+  - includeAll:
+      path: db/changelog/jwt_core/user

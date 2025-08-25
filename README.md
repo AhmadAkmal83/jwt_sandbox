@@ -46,8 +46,11 @@ docker volume rm kotlin-sandbox-jwt-db-data
 
 ### Web Access
 
-- Application: [http://localhost:9999](http://localhost:9999)
-- Health: [http://localhost:9999/actuator/health](http://localhost:9999/actuator/health)
+- Actuator: [http://localhost:9999/actuator](http://localhost:9999/actuator)
+
+### API Access
+
+- Registration: `POST` [http://localhost:9999/api/v1/auth/register](http://localhost:9999/api/v1/auth/register)
 
 
 ---
