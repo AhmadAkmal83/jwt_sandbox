@@ -18,6 +18,17 @@ services:
       timeout: 5s
       retries: 5
 
+  jwt-mail:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_WEBROOT: /mailpit
+
   jwt-app:
     build:
       context: .
@@ -32,9 +43,16 @@ services:
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
       jwt-db:
         condition: service_healthy
+      jwt-mail:
+        condition: service_started
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
       interval: 10s
@@ -53,13 +71,15 @@ services:
     depends_on:
       jwt-app:
         condition: service_healthy
-
-volumes:
-  db-data:
-    driver: local
-    name: kotlin-sandbox-jwt-db-data
+      jwt-mail:
+        condition: service_started
 
 networks:
   app-network:
     driver: bridge
     name: kotlin-sandbox-jwt-network
+
+volumes:
+  db-data:
+    driver: local
+    name: kotlin-sandbox-jwt-db-data
