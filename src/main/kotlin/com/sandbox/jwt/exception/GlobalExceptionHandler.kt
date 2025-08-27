@@ -1,6 +1,8 @@
 package com.sandbox.jwt.exception
 
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
+import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
+import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -17,6 +19,24 @@ class GlobalExceptionHandler {
 
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
+            .body(body)
+    }
+
+    @ExceptionHandler(InvalidVerificationTokenException::class)
+    fun handleInvalidTokenException(ex: InvalidVerificationTokenException): ResponseEntity<Map<String, String?>> {
+        val body = mapOf("error" to ex.message)
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(body)
+    }
+
+    @ExceptionHandler(VerificationTokenExpiredException::class)
+    fun handleTokenExpiredException(ex: VerificationTokenExpiredException): ResponseEntity<Map<String, String?>> {
+        val body = mapOf("error" to ex.message)
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
             .body(body)
     }
 

@@ -22,14 +22,18 @@ class UserRepositoryPersistenceTest {
     @Test
     fun `findByEmail should return user when email exists`() {
         // Arrange
-        val user = User(email = "valid_email@example.com", password = "ValidPassword123", roles = mutableSetOf(Role.USER))
+        val user = User(
+            email = "existing_user@example.test",
+            password = "UserPassword123",
+            roles = mutableSetOf(Role.USER),
+        )
         entityManager.persistAndFlush(user)
 
         // Act
-        val foundUserOptional = userRepository.findByEmail("valid_email@example.com")
+        val foundUserOptional = userRepository.findByEmail("existing_user@example.test")
 
         // Assert
-        assertThat(foundUserOptional).isPresent
+        assertThat(foundUserOptional).isPresent()
         val foundUser = foundUserOptional.get()
         assertThat(foundUser.email).isEqualTo(user.email)
         assertThat(foundUser.roles).containsExactly(Role.USER)
@@ -38,20 +42,20 @@ class UserRepositoryPersistenceTest {
     @Test
     fun `findByEmail should return empty optional when email does not exist`() {
         // Act
-        val foundUserOptional = userRepository.findByEmail("nonexistent@example.com")
+        val foundUserOptional = userRepository.findByEmail("non_existing_user@example.test")
 
         // Assert
-        assertThat(foundUserOptional).isNotPresent
+        assertThat(foundUserOptional).isNotPresent()
     }
 
     @Test
     fun `existsByEmail should return true when email exists`() {
         // Arrange
-        val user = User(email = "exists@example.com", password = "ValidPassword123")
+        val user = User(email = "existing_user@example.test", password = "UserPassword123")
         entityManager.persistAndFlush(user)
 
         // Act
-        val exists = userRepository.existsByEmail("exists@example.com")
+        val exists = userRepository.existsByEmail("existing_user@example.test")
 
         // Assert
         assertThat(exists).isTrue()
@@ -60,7 +64,7 @@ class UserRepositoryPersistenceTest {
     @Test
     fun `existsByEmail should return false when email does not exist`() {
         // Act
-        val exists = userRepository.existsByEmail("nonexistent@example.com")
+        val exists = userRepository.existsByEmail("non_existing_user@example.test")
 
         // Assert
         assertThat(exists).isFalse()
@@ -69,7 +73,7 @@ class UserRepositoryPersistenceTest {
     @Test
     fun `saving a user should populate auditing fields`() {
         // Arrange
-        val newUser = User(email = "valid_email@example.com", password = "ValidPassword123")
+        val newUser = User(email = "new_user@example.test", password = "UserPassword123")
 
         // Act
         val savedUser = userRepository.save(newUser)

@@ -2,6 +2,9 @@ package com.sandbox.jwt.auth
 
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
+import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
+import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
@@ -16,6 +19,7 @@ import java.util.UUID
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val mailService: MailService,
 ) {
 
     @Transactional
@@ -36,6 +40,28 @@ class AuthService(
             emailVerificationTokenExpiry = tokenExpiry,
         )
 
-        return userRepository.save(newUser)
+        val savedUser = userRepository.save(newUser)
+
+        mailService.sendVerificationEmail(savedUser)
+
+        return savedUser
+    }
+
+    @Transactional
+    fun verifyEmail(token: String) {
+        val user = userRepository.findByEmailVerificationToken(token)
+            .orElseThrow { InvalidVerificationTokenException("The verification token is invalid.") }
+
+        if (user.isActive) {
+            return
+        }
+
+        if (user.emailVerificationTokenExpiry?.isBefore(Instant.now()) == true) {
+            throw VerificationTokenExpiredException("The verification token has expired.")
+        }
+
+        user.isActive = true
+        user.emailVerificationToken = null
+        user.emailVerificationTokenExpiry = null
     }
 }

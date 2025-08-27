@@ -1,19 +1,24 @@
 package com.sandbox.jwt.auth
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.sandbox.jwt.auth.dto.RegisterRequest
+import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
-import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.hasItem
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.springframework.transaction.annotation.Transactional
@@ -22,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-class AuthControllerIntegrationTest {
+class AuthControllerRegistrationIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -36,13 +41,18 @@ class AuthControllerIntegrationTest {
     @Autowired
     private lateinit var passwordEncoder: PasswordEncoder
 
+    @MockitoBean
+    private lateinit var mailService: MailService
+
+    private val registrationEndpointPath = "/api/v1/auth/register"
+
     @Test
-    fun `POST register should create a new user and return 201 Created`() {
+    fun `POST register should create a new user, attempt to send verification email, and return 201 Created`() {
         // Arrange
-        val request = RegisterRequest("valid_email@example.com", "ValidPassword123")
+        val request = RegisterRequest("new_user@example.test", "UserPassword123")
 
         // Act & Assert
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
@@ -59,31 +69,40 @@ class AuthControllerIntegrationTest {
         assertThat(userInDb.isActive).isFalse()
         assertThat(userInDb.roles).containsExactly(Role.USER)
         assertThat(passwordEncoder.matches(request.password, userInDb.password)).isTrue()
+
+        // Verify that the mail service was called
+        verify(mailService).sendVerificationEmail(userInDb)
     }
 
     @Test
-    fun `POST register should return 409 Conflict when email already exists`() {
+    fun `POST register should return 409 Conflict and not send verification email when email already exists`() {
         // Arrange: Create an existing user directly in the database
-        val existingUser = User(email = "valid_email@example.com", password = "ValidPassword123")
+        val existingUser = User(
+            email = "existing_user@example.test",
+            password = passwordEncoder.encode("UserPassword123"),
+        )
         userRepository.save(existingUser)
 
-        val request = RegisterRequest("valid_email@example.com", "DifferentValidPassword")
+        val request = RegisterRequest("existing_user@example.test", "DifferentPassword123")
 
         // Act & Assert
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
             status { isConflict() }
-            jsonPath("$.error") { value("A user with the email 'valid_email@example.com' already exists.") }
+            jsonPath("$.error") { value("A user with the email 'existing_user@example.test' already exists.") }
         }
+
+        // Verify that the mail service was not called
+        verify(mailService, never()).sendVerificationEmail(any())
     }
 
     @Test
     fun `POST register should return 400 Bad Request for blank email`() {
         val request = RegisterRequest("", "ValidPassword123")
 
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
@@ -99,7 +118,7 @@ class AuthControllerIntegrationTest {
         val request = RegisterRequest("invalid_email", "ValidPassword123")
 
         // Act & Assert
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
@@ -111,9 +130,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     fun `POST register should return 400 Bad Request for blank password`() {
-        val request = RegisterRequest("valid_email@example.com", "")
+        val request = RegisterRequest("valid_email@example.test", "")
 
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
@@ -125,9 +144,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     fun `POST register should return 400 Bad Request for password shorter than 8 characters`() {
-        val request = RegisterRequest("valid_email@example.com", "short")
+        val request = RegisterRequest("valid_email@example.test", "Short")
 
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
@@ -139,9 +158,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     fun `POST register should return 400 Bad Request for password longer than 30 characters`() {
-        val request = RegisterRequest("valid_email@example.com", "passwordLongerThanMaxCharacters")
+        val request = RegisterRequest("valid_email@example.test", "PasswordLongerThanMaxCharacters")
 
-        mockMvc.post("/api/v1/auth/register") {
+        mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {

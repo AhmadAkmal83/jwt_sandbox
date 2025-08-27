@@ -18,7 +18,7 @@ class SecurityFilterChainConfig {
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/api/v1/auth/register").permitAll()
+                    .requestMatchers("/api/v1/auth/register", "/api/v1/auth/verify-email**").permitAll()
                     .requestMatchers("/actuator/**").permitAll()
                     .anyRequest().authenticated()
             }
