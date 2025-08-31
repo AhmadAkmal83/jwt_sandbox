@@ -32,12 +32,12 @@ class AuthControllerVerificationIntegrationTest {
 
     @Test
     fun `GET verify-email should activate user and return 200 OK for valid token`() {
-        // Arrange: Create an existing user directly in the database
+        // Arrange
         val validToken = UUID.randomUUID().toString()
         val user = User(
-            email = "not_verified_user@example.test",
-            password = "UserPassword123",
-            isActive = false,
+            email = "unverified_user@example.test",
+            passwordHash = "UserPassword123",
+            isVerified = false,
             emailVerificationToken = validToken,
             emailVerificationTokenExpiry = Instant.now().plus(1, ChronoUnit.DAYS)
         )
@@ -53,61 +53,67 @@ class AuthControllerVerificationIntegrationTest {
 
         // Verify database state
         val updatedUser = userRepository.findById(user.id).get()
-        assertThat(updatedUser.isActive).isTrue()
+        assertThat(updatedUser.isVerified).isTrue
         assertThat(updatedUser.emailVerificationToken).isNull()
         assertThat(updatedUser.emailVerificationTokenExpiry).isNull()
     }
 
     @Test
-    fun `GET verify-email should return 400 Bad Request when token is missing`() {
+    fun `GET verify-email should return 422 Unprocessable Entity when token is missing`() {
+        // Act & Assert
         mockMvc.get(verificationEndpointPath)
             .andExpect {
-                status { isBadRequest() }
-                jsonPath("$.error") { value("Validation Failed") }
-                jsonPath("$.messages") { value(hasItem("The verification token cannot be blank.")) }
+                status { isUnprocessableEntity() }
+                jsonPath("$.message") { value("The given data was invalid.") }
+                jsonPath("$.errors.token") { value(hasItem("The verification token cannot be blank.")) }
             }
     }
 
     @Test
-    fun `GET verify-email should return 400 Bad Request when token is blank`() {
+    fun `GET verify-email should return 422 Unprocessable Entity when token is blank`() {
+        // Act & Assert
         mockMvc.get(verificationEndpointPath) {
             param("token", "")
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("The verification token cannot be blank.")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.token") { value(hasItem("The verification token cannot be blank.")) }
         }
     }
 
     @Test
-    fun `GET verify-email should return 400 Bad Request when token format is invalid`() {
+    fun `GET verify-email should return 422 Unprocessable Entity when token format is invalid`() {
+        // Act & Assert
         mockMvc.get(verificationEndpointPath) {
             param("token", "not-a-valid-uuid")
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("The verification token format is invalid.")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.token") { value(hasItem("The verification token format is invalid.")) }
         }
     }
 
     @Test
     fun `GET verify-email should return 400 Bad Request for non-existent token`() {
+        // Arrange
         val nonExistentToken = UUID.randomUUID().toString()
+
+        // Act & Assert
         mockMvc.get(verificationEndpointPath) {
             param("token", nonExistentToken)
         }.andExpect {
             status { isBadRequest() }
-            jsonPath("$.error") { value("The verification token is invalid.") }
+            jsonPath("$.message") { value("The verification token is invalid.") }
         }
     }
 
     @Test
     fun `GET verify-email should return 400 Bad Request for expired token`() {
-        // Arrange: Create a user with an expired token
+        // Arrange
         val expiredToken = UUID.randomUUID().toString()
         val expiredUser = User(
-            email = "not_verified_user@example.test",
-            password = "UserPassword123",
+            email = "unverified_user@example.test",
+            passwordHash = "UserPassword123",
             emailVerificationToken = expiredToken,
             emailVerificationTokenExpiry = Instant.now().minus(1, ChronoUnit.DAYS)
         )
@@ -118,7 +124,7 @@ class AuthControllerVerificationIntegrationTest {
             param("token", expiredToken)
         }.andExpect {
             status { isBadRequest() }
-            jsonPath("$.error") { value("The verification token has expired.") }
+            jsonPath("$.message") { value("The verification token has expired.") }
         }
     }
 }

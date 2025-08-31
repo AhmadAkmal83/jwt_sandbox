@@ -2,12 +2,13 @@ package com.sandbox.jwt
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest
-class JwtApplicationTests {
+@ActiveProfiles("test")
+class JwtApplicationTest {
 
     @Test
     fun contextLoads() {
     }
-
 }

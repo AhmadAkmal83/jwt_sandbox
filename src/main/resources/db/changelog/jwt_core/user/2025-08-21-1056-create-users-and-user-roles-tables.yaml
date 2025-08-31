@@ -4,6 +4,7 @@ databaseChangeLog:
       author: team_backend
       changes:
         - createTable:
+            schemaName: ${core-schema}
             tableName: users
             columns:
               - column:
@@ -20,12 +21,12 @@ databaseChangeLog:
                     unique: true
                     nullable: false
               - column:
-                  name: password
+                  name: password_hash
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
-                  name: is_active
+                  name: is_verified
                   type: BOOLEAN
                   defaultValueBoolean: false
                   constraints:
@@ -60,6 +61,7 @@ databaseChangeLog:
       author: team_backend
       changes:
         - createTable:
+            schemaName: ${core-schema}
             tableName: user_roles
             columns:
               - column:
@@ -68,13 +70,16 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     foreignKeyName: fk_user_roles_user_id
-                    references: users(id)
+                    referencedTableSchemaName: ${core-schema}
+                    referencedTableName: users
+                    referencedColumnNames: id
               - column:
                   name: role
                   type: VARCHAR(50)
                   constraints:
                     nullable: false
         - addPrimaryKey:
+            schemaName: ${core-schema}
             tableName: user_roles
             columnNames: user_id, role
             constraintName: pk_user_roles

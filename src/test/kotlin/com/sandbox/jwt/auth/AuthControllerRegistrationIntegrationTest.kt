@@ -66,9 +66,9 @@ class AuthControllerRegistrationIntegrationTest {
         // Verify database state
         val userInDb = userRepository.findByEmail(request.email).get()
         assertThat(userInDb.email).isEqualTo(request.email)
-        assertThat(userInDb.isActive).isFalse()
+        assertThat(userInDb.isVerified).isFalse
         assertThat(userInDb.roles).containsExactly(Role.USER)
-        assertThat(passwordEncoder.matches(request.password, userInDb.password)).isTrue()
+        assertThat(passwordEncoder.matches(request.password, userInDb.passwordHash)).isTrue
 
         // Verify that the mail service was called
         verify(mailService).sendVerificationEmail(userInDb)
@@ -76,10 +76,10 @@ class AuthControllerRegistrationIntegrationTest {
 
     @Test
     fun `POST register should return 409 Conflict and not send verification email when email already exists`() {
-        // Arrange: Create an existing user directly in the database
+        // Arrange
         val existingUser = User(
             email = "existing_user@example.test",
-            password = passwordEncoder.encode("UserPassword123"),
+            passwordHash = passwordEncoder.encode("UserPassword123"),
         )
         userRepository.save(existingUser)
 
@@ -91,7 +91,7 @@ class AuthControllerRegistrationIntegrationTest {
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
             status { isConflict() }
-            jsonPath("$.error") { value("A user with the email 'existing_user@example.test' already exists.") }
+            jsonPath("$.message") { value("A user with the email 'existing_user@example.test' already exists.") }
         }
 
         // Verify that the mail service was not called
@@ -99,21 +99,23 @@ class AuthControllerRegistrationIntegrationTest {
     }
 
     @Test
-    fun `POST register should return 400 Bad Request for blank email`() {
+    fun `POST register should return 422 Unprocessable Entity for blank email`() {
+        // Arrange
         val request = RegisterRequest("", "ValidPassword123")
 
+        // Act & Assert
         mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("Email cannot be blank")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.email") { value(hasItem("Email cannot be blank.")) }
         }
     }
 
     @Test
-    fun `POST register should return 400 Bad Request for invalid email format`() {
+    fun `POST register should return 422 Unprocessable Entity for invalid email format`() {
         // Arrange
         val request = RegisterRequest("invalid_email", "ValidPassword123")
 
@@ -122,51 +124,74 @@ class AuthControllerRegistrationIntegrationTest {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("Email format is invalid")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.email") { value(hasItem("Email format is invalid.")) }
         }
     }
 
     @Test
-    fun `POST register should return 400 Bad Request for blank password`() {
+    fun `POST register should return 422 Unprocessable Entity for blank password`() {
+        // Arrange
         val request = RegisterRequest("valid_email@example.test", "")
 
+        // Act & Assert
         mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("Password cannot be blank")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.password") { value(hasItem("Password cannot be blank.")) }
         }
     }
 
     @Test
-    fun `POST register should return 400 Bad Request for password shorter than 8 characters`() {
+    fun `POST register should return 422 Unprocessable Entity for password shorter than 8 characters`() {
+        // Arrange
         val request = RegisterRequest("valid_email@example.test", "Short")
 
+        // Act & Assert
         mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("Password must be between 8 and 30 characters")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.password") { value(hasItem("Password must be between 8 and 30 characters.")) }
         }
     }
 
     @Test
-    fun `POST register should return 400 Bad Request for password longer than 30 characters`() {
+    fun `POST register should return 422 Unprocessable Entity for password longer than 30 characters`() {
+        // Arrange
         val request = RegisterRequest("valid_email@example.test", "PasswordLongerThanMaxCharacters")
 
+        // Act & Assert
         mockMvc.post(registrationEndpointPath) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
-            status { isBadRequest() }
-            jsonPath("$.error") { value("Validation Failed") }
-            jsonPath("$.messages") { value(hasItem("Password must be between 8 and 30 characters")) }
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.password") { value(hasItem("Password must be between 8 and 30 characters.")) }
+        }
+    }
+
+    @Test
+    fun `POST register should return 422 Unprocessable Entity with correct errors for multiple errored fields`() {
+        // Arrange
+        val request = RegisterRequest("", "")
+
+        // Act & Assert
+        mockMvc.post(registrationEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.email") { value(hasItem("Email cannot be blank.")) }
+            jsonPath("$.errors.password") { value(hasItem("Password cannot be blank.")) }
         }
     }
 }

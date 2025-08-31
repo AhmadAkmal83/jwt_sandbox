@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: jwt
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:9998}/${DB_DATABASE:jwt_sandbox_db}
+    username: ${DB_USERNAME:jwt_sandbox_db}
+    password: ${DB_PASSWORD:raNdom_paSS_WOrD}
+  liquibase:
+    enabled: true
+    liquibase-schema: public
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    parameters:
+      core-schema: jwt_core
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+
+logging:
+  level:
+    root: ${LOGGING_LEVEL:INFO}
+
+app:
+  mail:
+    from:
+      address: ${MAIL_FROM_ADDRESS:no-reply@jwt.test}
+      name: ${MAIL_FROM_NAME:JWT Team}
+    verification:
+      url: ${APP_URL:http://localhost:8080}/api/v1/auth/verify-email
+  jwt:
+    secret-key: dGhlLWhpZGRlbi1tZXNzYWdlLWlzLXRoYXQtdGhlcmUtaXMtbm8taGlkZGVuLW1lc3NhZ2U=
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000

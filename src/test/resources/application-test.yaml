@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: jwt
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+  liquibase:
+    enabled: true
+    liquibase-schema: public
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    parameters:
+      core-schema: jwt_core
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  mail:
+    host: localhost
+    port: 1025
+    username: ''
+    password: ''
+    properties:
+      mail:
+        smtp:
+          auth: false
+
+logging:
+  level:
+    root: INFO
+
+app:
+  mail:
+    from:
+      address: no-reply@jwt.test
+      name: JWT Team
+    verification:
+      url: http://localhost:8080/api/v1/auth/verify-email
+  jwt:
+    secret-key: dGhlLWhpZGRlbi1tZXNzYWdlLWlzLXRoYXQtdGhlcmUtaXMtbm8taGlkZGVuLW1lc3NhZ2U=
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000

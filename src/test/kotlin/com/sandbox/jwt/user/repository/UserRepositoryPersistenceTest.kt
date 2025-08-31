@@ -7,10 +7,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
-import org.springframework.test.context.ActiveProfiles
 
 @DataJpaTest
-@ActiveProfiles("test")
 class UserRepositoryPersistenceTest {
 
     @Autowired
@@ -20,72 +18,71 @@ class UserRepositoryPersistenceTest {
     private lateinit var userRepository: UserRepository
 
     @Test
-    fun `findByEmail should return user when email exists`() {
+    fun `findByEmail should return user with correct roles when email exists`() {
         // Arrange
-        val user = User(
+        val existingUser = User(
             email = "existing_user@example.test",
-            password = "UserPassword123",
+            passwordHash = "EncodedUserPassword123",
             roles = mutableSetOf(Role.USER),
         )
-        entityManager.persistAndFlush(user)
+        entityManager.persistAndFlush(existingUser)
+        entityManager.clear()
 
         // Act
-        val foundUserOptional = userRepository.findByEmail("existing_user@example.test")
+        val retrievedUserOptional = userRepository.findByEmail("existing_user@example.test")
 
         // Assert
-        assertThat(foundUserOptional).isPresent()
-        val foundUser = foundUserOptional.get()
-        assertThat(foundUser.email).isEqualTo(user.email)
-        assertThat(foundUser.roles).containsExactly(Role.USER)
+        assertThat(retrievedUserOptional).isPresent
+        val retrievedUser = retrievedUserOptional.get()
+        assertThat(retrievedUser.email).isEqualTo(existingUser.email)
+        assertThat(retrievedUser.roles).containsExactly(Role.USER)
     }
 
     @Test
     fun `findByEmail should return empty optional when email does not exist`() {
         // Act
-        val foundUserOptional = userRepository.findByEmail("non_existing_user@example.test")
+        val retrievedUserOptional = userRepository.findByEmail("non_existent_user@example.test")
 
         // Assert
-        assertThat(foundUserOptional).isNotPresent()
+        assertThat(retrievedUserOptional).isNotPresent
     }
 
     @Test
     fun `existsByEmail should return true when email exists`() {
         // Arrange
-        val user = User(email = "existing_user@example.test", password = "UserPassword123")
+        val user = User(email = "existing_user@example.test", passwordHash = "EncodedUserPassword123")
         entityManager.persistAndFlush(user)
+        entityManager.clear()
 
         // Act
         val exists = userRepository.existsByEmail("existing_user@example.test")
 
         // Assert
-        assertThat(exists).isTrue()
+        assertThat(exists).isTrue
     }
 
     @Test
     fun `existsByEmail should return false when email does not exist`() {
         // Act
-        val exists = userRepository.existsByEmail("non_existing_user@example.test")
+        val exists = userRepository.existsByEmail("non_existent_user@example.test")
 
         // Assert
-        assertThat(exists).isFalse()
+        assertThat(exists).isFalse
     }
 
     @Test
     fun `saving a user should populate auditing fields`() {
         // Arrange
-        val newUser = User(email = "new_user@example.test", password = "UserPassword123")
+        val newUser = User(email = "new_user@example.test", passwordHash = "EncodedUserPassword123")
 
         // Act
         val savedUser = userRepository.save(newUser)
-        entityManager.flush()
-        entityManager.clear() // Detach the entity to ensure we get a fresh copy from the DB
-
-        val foundUser = userRepository.findById(savedUser.id).get()
+        val retrievedUser = userRepository.findById(savedUser.id).get()
 
         // Assert
-        assertThat(foundUser.id).isNotNull()
-        assertThat(foundUser.createdAt).isNotNull()
-        assertThat(foundUser.updatedAt).isNotNull()
-        assertThat(foundUser.createdAt).isEqualTo(foundUser.updatedAt)
+        assertThat(retrievedUser.id).isNotNull
+        assertThat(retrievedUser.createdAt).isNotNull
+        assertThat(retrievedUser.updatedAt).isNotNull
+        assertThat(retrievedUser.createdAt).isEqualTo(retrievedUser.updatedAt)
     }
 }

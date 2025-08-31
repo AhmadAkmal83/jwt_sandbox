@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20250827-1930-create-refresh-tokens-table
+      author: team_backend
+      changes:
+        - createTable:
+            schemaName: ${core-schema}
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_refresh_tokens_user_id
+                    referencedTableSchemaName: ${core-schema}
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: token
+                  type: VARCHAR(255)
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: expiry_date
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            schemaName: ${core-schema}
+            tableName: refresh_tokens
+            columnNames: user_id
+            constraintName: uq_refresh_tokens_user_id

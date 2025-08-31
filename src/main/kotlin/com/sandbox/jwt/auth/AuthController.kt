@@ -1,8 +1,11 @@
 package com.sandbox.jwt.auth
 
-import com.sandbox.jwt.auth.dto.MessageResponse
+import com.sandbox.jwt.auth.dto.LoginRequest
+import com.sandbox.jwt.auth.dto.LoginResponse
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.dto.VerifyEmailRequest
+import com.sandbox.jwt.auth.service.AuthService
+import com.sandbox.jwt.common.dto.MessageResponse
 import com.sandbox.jwt.user.dto.UserResponse
 import com.sandbox.jwt.user.dto.toUserResponse
 import jakarta.validation.Valid
@@ -31,8 +34,19 @@ class AuthController(private val authService: AuthService) {
         request.token?.let { token ->
             authService.verifyEmail(token)
         }
-        val response = MessageResponse("Email verified successfully. You can now log in.")
+        val messageResponse = MessageResponse("Email verified successfully. You can now log in.")
 
-        return ResponseEntity.status(HttpStatus.OK).body(response)
+        return ResponseEntity.status(HttpStatus.OK).body(messageResponse)
+    }
+
+    @PostMapping("/login")
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
+        val loginResult = authService.login(request)
+        val loginResponse = LoginResponse(
+            accessToken = loginResult.accessToken,
+            refreshToken = loginResult.refreshToken,
+        )
+
+        return ResponseEntity.status(HttpStatus.OK).body(loginResponse)
     }
 }

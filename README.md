@@ -58,6 +58,7 @@ docker volume rm kotlin-sandbox-jwt-db-data
 
 - Registration: `POST` [http://localhost:9999/api/v1/auth/register](http://localhost:9999/api/v1/auth/register)
 - Email Verification: `GET` [http://localhost:9999/api/v1/auth/verify-email](http://localhost:9999/api/v1/auth/verify-email)
+- Login: `POST` [http://localhost:9999/api/v1/auth/login](http://localhost:9999/api/v1/auth/login)
 
 ---
 
@@ -76,7 +77,7 @@ If you want do not want to rely on Docker, local installation of *PostgreSQL & M
 
 ### Environment Variables
 
-`application.properties` is *preloaded with defaults matching `jwt-db` and `jwt-mail` actual credentials on purpose (**against best practices**)* to provide convenient development ability without worrying about project profiles or environment variables.
+`application.yaml` is *preloaded with defaults matching `jwt-db` and `jwt-mail` actual credentials on purpose (**against best practices**)* to provide convenient development ability without worrying about project profiles or environment variables.
 
 These variables are passed from docker's environment variables `./docker/.env` through the `jwt-db` container.
 
@@ -96,7 +97,7 @@ Use IDE and local JDK for iterative development builds and utilize the container
 
 ### Alternate Setup
 
-If you prefer using your own PostgreSQL and Mailpit setup, all the default `DB_*` & `MAIL_*` environment variables set in `application.properties` must be overridden with values matching your setup.
+If you prefer using your own PostgreSQL and Mailpit setup, all the default `DB_*` & `MAIL_*` environment variables set in `application.yaml` must be overridden with values matching your setup.
 
 ---
 

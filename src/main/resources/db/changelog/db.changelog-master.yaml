@@ -4,7 +4,10 @@ databaseChangeLog:
       author: team_backend
       changes:
         - sql:
-            sql: CREATE SCHEMA IF NOT EXISTS jwt_core;
+            sql: CREATE SCHEMA IF NOT EXISTS ${core-schema};
 
   - includeAll:
-      path: db/changelog/jwt_core/user
+      path: db/changelog/${core-schema}/user
+
+  - includeAll:
+      path: db/changelog/${core-schema}/auth

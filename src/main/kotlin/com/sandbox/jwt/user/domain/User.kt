@@ -30,11 +30,11 @@ data class User(
     @Column(name = "email", nullable = false, unique = true)
     var email: String,
 
-    @Column(name = "password", nullable = false)
-    var password: String,
+    @Column(name = "password_hash", nullable = false)
+    var passwordHash: String,
 
-    @Column(name = "is_active", nullable = false)
-    var isActive: Boolean = false,
+    @Column(name = "is_verified", nullable = false)
+    var isVerified: Boolean = false,
 
     @ElementCollection(targetClass = Role::class, fetch = FetchType.EAGER)
     @CollectionTable(

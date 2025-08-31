@@ -13,11 +13,11 @@ class RegisterRequest @JsonCreator constructor(
     @JsonProperty("password")
     _password: String
 ) {
-    @get:NotBlank(message = "Email cannot be blank")
-    @get:Email(message = "Email format is invalid")
+    @get:NotBlank(message = "Email cannot be blank.")
+    @get:Email(message = "Email format is invalid.")
     val email: String = _email.trim()
 
-    @get:NotBlank(message = "Password cannot be blank")
-    @get:Size(min = 8, max = 30, message = "Password must be between 8 and 30 characters")
+    @get:NotBlank(message = "Password cannot be blank.")
+    @get:Size(min = 8, max = 30, message = "Password must be between 8 and 30 characters.")
     val password: String = _password
 }

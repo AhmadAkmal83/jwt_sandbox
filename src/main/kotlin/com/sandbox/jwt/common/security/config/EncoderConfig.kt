@@ -1,4 +1,4 @@
-package com.sandbox.jwt.security.config
+package com.sandbox.jwt.common.security.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

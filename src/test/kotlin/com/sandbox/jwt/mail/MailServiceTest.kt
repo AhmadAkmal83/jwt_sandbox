@@ -73,7 +73,7 @@ class MailServiceTest {
         // Arrange
         val newUser = User(
             email = "new_user@example.test",
-            password = "UserPassword123",
+            passwordHash = "EncodedUserPassword123",
             emailVerificationToken = UUID.randomUUID().toString(),
         )
 
@@ -102,7 +102,7 @@ class MailServiceTest {
     @Test
     fun `sendVerificationEmail should log error and not throw exception when mail sending fails`() {
         // Arrange
-        val newUser = User(email = "new_user@example.test", password = "UserPassword123")
+        val newUser = User(email = "new_user@example.test", passwordHash = "EncodedUserPassword123")
         val exceptionMessage = "SMTP server down"
         whenever(mailSender.send(any<SimpleMailMessage>()))
             .doThrow(MailSendException(exceptionMessage))
