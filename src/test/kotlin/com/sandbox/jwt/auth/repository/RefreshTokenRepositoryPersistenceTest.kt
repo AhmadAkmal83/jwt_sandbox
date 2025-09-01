@@ -1,7 +1,7 @@
 package com.sandbox.jwt.auth.repository
 
-import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.auth.domain.RefreshToken
+import com.sandbox.jwt.user.domain.User
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

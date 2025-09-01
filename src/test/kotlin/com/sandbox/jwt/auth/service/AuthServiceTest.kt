@@ -9,7 +9,8 @@ import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
@@ -68,13 +69,13 @@ class AuthServiceTest {
         verify(userRepository).save(userCaptor.capture())
         val savedUser = userCaptor.value
 
-        Assertions.assertThat(result).isEqualTo(savedUser)
-        Assertions.assertThat(savedUser.email).isEqualTo(request.email)
-        Assertions.assertThat(savedUser.passwordHash).isEqualTo(encodedPassword)
-        Assertions.assertThat(savedUser.roles).containsExactly(Role.USER)
-        Assertions.assertThat(savedUser.isVerified).isFalse
-        Assertions.assertThat(savedUser.emailVerificationToken).isNotNull
-        Assertions.assertThat(savedUser.emailVerificationTokenExpiry).isNotNull
+        assertThat(result).isEqualTo(savedUser)
+        assertThat(savedUser.email).isEqualTo(request.email)
+        assertThat(savedUser.passwordHash).isEqualTo(encodedPassword)
+        assertThat(savedUser.roles).containsExactly(Role.USER)
+        assertThat(savedUser.isVerified).isFalse
+        assertThat(savedUser.emailVerificationToken).isNotNull
+        assertThat(savedUser.emailVerificationTokenExpiry).isNotNull
 
         // Verify email is sent
         verify(mailService).sendVerificationEmail(savedUser)
@@ -87,7 +88,7 @@ class AuthServiceTest {
         whenever(userRepository.existsByEmail(request.email)).thenReturn(true)
 
         // Act & Assert
-        Assertions.assertThatThrownBy { authService.registerUser(request) }
+        assertThatThrownBy { authService.registerUser(request) }
             .isInstanceOf(EmailAlreadyExistsException::class.java)
             .hasMessage("A user with the email 'existing_user@example.test' already exists.")
 
@@ -124,8 +125,8 @@ class AuthServiceTest {
         val result = authService.login(request)
 
         // Assert
-        Assertions.assertThat(result.accessToken).isEqualTo(accessToken)
-        Assertions.assertThat(result.refreshToken).isEqualTo(refreshToken.token)
+        assertThat(result.accessToken).isEqualTo(accessToken)
+        assertThat(result.refreshToken).isEqualTo(refreshToken.token)
     }
 
     @Test
@@ -135,7 +136,7 @@ class AuthServiceTest {
         whenever(userRepository.findByEmail(request.email)).thenReturn(Optional.empty())
 
         // Act & Assert
-        Assertions.assertThatThrownBy { authService.login(request) }
+        assertThatThrownBy { authService.login(request) }
             .isInstanceOf(BadCredentialsException::class.java)
             .hasMessage("Invalid email or password.")
     }
@@ -153,7 +154,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches(request.password, user.passwordHash)).thenReturn(false)
 
         // Act & Assert
-        Assertions.assertThatThrownBy { authService.login(request) }
+        assertThatThrownBy { authService.login(request) }
             .isInstanceOf(BadCredentialsException::class.java)
             .hasMessage("Invalid email or password.")
     }
@@ -171,7 +172,7 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches(request.password, user.passwordHash)).thenReturn(true)
 
         // Act & Assert
-        Assertions.assertThatThrownBy { authService.login(request) }
+        assertThatThrownBy { authService.login(request) }
             .isInstanceOf(AccountNotVerifiedException::class.java)
             .hasMessage("Account is not verified. Please check your email.")
     }

@@ -59,6 +59,7 @@ docker volume rm kotlin-sandbox-jwt-db-data
 - Registration: `POST` [http://localhost:9999/api/v1/auth/register](http://localhost:9999/api/v1/auth/register)
 - Email Verification: `GET` [http://localhost:9999/api/v1/auth/verify-email](http://localhost:9999/api/v1/auth/verify-email)
 - Login: `POST` [http://localhost:9999/api/v1/auth/login](http://localhost:9999/api/v1/auth/login)
+- Get Current User: `GET` [http://localhost:9999/api/v1/users/me](http://localhost:9999/api/v1/users/me)
 
 ---
 
