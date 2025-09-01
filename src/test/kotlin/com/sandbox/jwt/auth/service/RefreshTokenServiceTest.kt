@@ -2,9 +2,12 @@ package com.sandbox.jwt.auth.service
 
 import com.sandbox.jwt.auth.config.JwtProperties
 import com.sandbox.jwt.auth.domain.RefreshToken
+import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
+import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,6 +21,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.Optional
 import java.util.UUID
 
@@ -26,6 +30,9 @@ class RefreshTokenServiceTest {
 
     @Mock
     private lateinit var refreshTokenRepository: RefreshTokenRepository
+
+    @Mock
+    private lateinit var jwtService: JwtService
 
     @Captor
     private lateinit var refreshTokenCaptor: ArgumentCaptor<RefreshToken>
@@ -40,7 +47,7 @@ class RefreshTokenServiceTest {
 
     @BeforeEach
     fun setUp() {
-        refreshTokenService = RefreshTokenService(refreshTokenRepository, jwtProperties)
+        refreshTokenService = RefreshTokenService(refreshTokenRepository, jwtProperties, jwtService)
     }
 
     @Test
@@ -90,5 +97,64 @@ class RefreshTokenServiceTest {
         // Assert the result is a new token, not the old one
         assertThat(result.id).isNotEqualTo(existingToken.id)
         assertThat(result.token).isNotEqualTo(existingToken.token)
+    }
+
+    @Test
+    fun `refreshAccessToken should return new access token for valid token`() {
+        // Arrange
+        val user = User(id = 1L, email = "existing_user@example.test", passwordHash = "UserPassword123")
+        val refreshTokenString = UUID.randomUUID().toString()
+        val refreshToken = RefreshToken(
+            user = user,
+            token = refreshTokenString,
+            expiryDate = Instant.now().plus(1, ChronoUnit.DAYS)
+        )
+        val newAccessToken = "new-jwt-access-token"
+
+        whenever(refreshTokenRepository.findByToken(refreshTokenString)).thenReturn(Optional.of(refreshToken))
+        whenever(jwtService.generateToken(user)).thenReturn(newAccessToken)
+
+        // Act
+        val result = refreshTokenService.refreshAccessToken(refreshTokenString)
+
+        // Assert
+        assertThat(result).isEqualTo(newAccessToken)
+        verify(refreshTokenRepository, never()).delete(any())
+    }
+
+    @Test
+    fun `refreshAccessToken should throw InvalidVerificationTokenException for non-existent token`() {
+        // Arrange
+        val nonExistentToken = UUID.randomUUID().toString()
+        whenever(refreshTokenRepository.findByToken(nonExistentToken)).thenReturn(Optional.empty())
+
+        // Act & Assert
+        assertThatThrownBy { refreshTokenService.refreshAccessToken(nonExistentToken) }
+            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .hasMessage("The refresh token is invalid.")
+
+        verify(jwtService, never()).generateToken(any())
+    }
+
+    @Test
+    fun `refreshAccessToken should throw VerificationTokenExpiredException and delete token when expired`() {
+        // Arrange
+        val user = User(id = 1L, email = "existing_user@example.test", passwordHash = "UserPassword123")
+        val expiredTokenString = UUID.randomUUID().toString()
+        val expiredToken = RefreshToken(
+            user = user,
+            token = expiredTokenString,
+            expiryDate = Instant.now().minus(1, ChronoUnit.DAYS)
+        )
+        whenever(refreshTokenRepository.findByToken(expiredTokenString)).thenReturn(Optional.of(expiredToken))
+
+        // Act & Assert
+        assertThatThrownBy { refreshTokenService.refreshAccessToken(expiredTokenString) }
+            .isInstanceOf(VerificationTokenExpiredException::class.java)
+            .hasMessage("Refresh token has expired. Please log in again.")
+
+        // Verify
+        verify(refreshTokenRepository).delete(expiredToken)
+        verify(jwtService, never()).generateToken(any())
     }
 }

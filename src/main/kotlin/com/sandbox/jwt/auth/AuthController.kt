@@ -3,8 +3,11 @@ package com.sandbox.jwt.auth
 import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.LoginResponse
 import com.sandbox.jwt.auth.dto.RegisterRequest
+import com.sandbox.jwt.auth.dto.TokenRefreshRequest
+import com.sandbox.jwt.auth.dto.TokenRefreshResponse
 import com.sandbox.jwt.auth.dto.VerifyEmailRequest
 import com.sandbox.jwt.auth.service.AuthService
+import com.sandbox.jwt.auth.service.RefreshTokenService
 import com.sandbox.jwt.common.dto.MessageResponse
 import com.sandbox.jwt.user.dto.UserResponse
 import com.sandbox.jwt.user.dto.toUserResponse
@@ -19,7 +22,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/auth")
-class AuthController(private val authService: AuthService) {
+class AuthController(
+    private val authService: AuthService,
+    private val refreshTokenService: RefreshTokenService,
+) {
 
     @PostMapping("/register")
     fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<UserResponse> {
@@ -48,5 +54,13 @@ class AuthController(private val authService: AuthService) {
         )
 
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse)
+    }
+
+    @PostMapping("/refresh")
+    fun refresh(@Valid @RequestBody request: TokenRefreshRequest): ResponseEntity<TokenRefreshResponse> {
+        val newAccessToken = refreshTokenService.refreshAccessToken(request.token)
+        val tokenRefreshResponse = TokenRefreshResponse(accessToken = newAccessToken)
+
+        return ResponseEntity.status(HttpStatus.OK).body(tokenRefreshResponse)
     }
 }

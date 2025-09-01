@@ -1,4 +1,4 @@
-package com.sandbox.jwt.user
+package com.sandbox.jwt.user.controller
 
 import com.sandbox.jwt.auth.service.JwtService
 import com.sandbox.jwt.user.domain.Role
