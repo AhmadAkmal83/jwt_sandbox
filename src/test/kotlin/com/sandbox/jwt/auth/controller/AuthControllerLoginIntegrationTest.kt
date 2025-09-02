@@ -1,11 +1,12 @@
-package com.sandbox.jwt.auth
+package com.sandbox.jwt.auth.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
+import org.hamcrest.Matchers
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.springframework.transaction.annotation.Transactional
+import kotlin.collections.get
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -78,7 +80,7 @@ class AuthControllerLoginIntegrationTest {
 
         // Verify database state
         val refreshTokenInDb = refreshTokenRepository.findByUser(verifiedUser)
-        assertThat(refreshTokenInDb).isPresent
+        Assertions.assertThat(refreshTokenInDb).isPresent
     }
 
     @Test
@@ -140,7 +142,7 @@ class AuthControllerLoginIntegrationTest {
         val responseString = resultAction.andReturn().response.contentAsString
         val firstResponse = objectMapper.readValue(responseString, Map::class.java)
         val firstRefreshToken = firstResponse["refreshToken"] as String
-        assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isPresent
+        Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isPresent
 
         // Second login Act & Assert
         mockMvc.post(loginEndpointPath) {
@@ -148,11 +150,11 @@ class AuthControllerLoginIntegrationTest {
             content = objectMapper.writeValueAsString(request)
         }.andExpect {
             status { isOk() }
-            jsonPath("$.refreshToken") { value(org.hamcrest.Matchers.not(firstRefreshToken)) }
+            jsonPath("$.refreshToken") { value(Matchers.not(firstRefreshToken)) }
         }
 
         // Verify database state
-        assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isNotPresent
-        assertThat(refreshTokenRepository.count()).isEqualTo(1)
+        Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isNotPresent
+        Assertions.assertThat(refreshTokenRepository.count()).isEqualTo(1)
     }
 }

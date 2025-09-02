@@ -5,6 +5,7 @@ Spring Boot sandbox for **Kotlin**, containerized using **Docker** with **Postgr
 1. **Production Build:** Prerequisites, Environment Variables, Build & Run, Stop, Remove Persistent Data, Web Access, API Access
 2. **Iterative Development:** Prerequisites, Environment Variables, Recommended Setup, Alternate Setup
 3. **Docker Setup:** Containers, Physical Layers, Notes
+4. **Postman Collection:** Description, Download Link
 
 ---
 
@@ -61,6 +62,7 @@ docker volume rm kotlin-sandbox-jwt-db-data
 - Login: `POST` [http://localhost:9999/api/v1/auth/login](http://localhost:9999/api/v1/auth/login)
 - Get Current User: `GET` [http://localhost:9999/api/v1/users/me](http://localhost:9999/api/v1/users/me)
 - Refresh Access Token: `POST` [http://localhost:9999/api/v1/auth/refresh](http://localhost:9999/api/v1/auth/refresh)
+- Logout: `POST` [http://localhost:9999/api/v1/auth/logout](http://localhost:9999/api/v1/auth/logout)
 
 ---
 
@@ -161,3 +163,30 @@ source .bash_aliases
 ```
 
 After adding the alias, you will be able to issue commands like `docc ps`, `docc up -d`, `docc down`, `docc up -d jwt-db jwt-mail`
+
+---
+
+## Postman Collection
+
+### Description
+
+The collection contains the following endpoints: 
+
+- Authentication
+    - `POST` `{{baseUrl}}/auth/register`
+    - `GET`  `{{baseUrl}}/auth/verify-email`
+    - `POST` `{{baseUrl}}/auth/login`
+    - `POST` `{{baseUrl}}/auth/refresh` -> needs variable `refreshToken`
+    - `POST` `{{baseUrl}}/auth/logout` -> needs variable `accessToken`
+- Users
+    - `GET`  `{{baseUrl}}/users/me` -> needs variable `accessToken`
+
+Ensure variables are set on the top-level directory `JwtSandbox`
+- `baseUrl`: set it to `http://localhost:9999/api/v1` if docker container `jwt-app` is running, or `http://localhost:8080/api/v1` if running development build.
+- `accessToken` & `refreshToken` should be set as needed when manually hitting the endpoints.
+
+### Download Link
+
+[JwtSandbox Postman Collection](https://drive.google.com/file/d/1E8coYy5aroKNzPWBtF2uKwNjcHzMN7V_/view?usp=sharing)
+
+---

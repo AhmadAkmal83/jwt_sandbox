@@ -1,4 +1,4 @@
-package com.sandbox.jwt.auth
+package com.sandbox.jwt.auth.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.sandbox.jwt.auth.domain.RefreshToken
@@ -6,7 +6,7 @@ import com.sandbox.jwt.auth.dto.TokenRefreshRequest
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -103,7 +103,6 @@ class AuthControllerRefreshIntegrationTest {
             expiryDate = Instant.now().minus(1, ChronoUnit.DAYS)
         )
         refreshTokenRepository.save(expiredRefreshToken)
-        assertThat(refreshTokenRepository.findByToken(expiredRefreshToken.token)).isPresent
 
         val request = TokenRefreshRequest(token = expiredRefreshToken.token)
 
@@ -117,7 +116,7 @@ class AuthControllerRefreshIntegrationTest {
         }
 
         // Verify database state
-        assertThat(refreshTokenRepository.findByToken(expiredRefreshToken.token)).isNotPresent
+        Assertions.assertThat(refreshTokenRepository.findByToken(expiredRefreshToken.token)).isNotPresent
     }
 
     @Test

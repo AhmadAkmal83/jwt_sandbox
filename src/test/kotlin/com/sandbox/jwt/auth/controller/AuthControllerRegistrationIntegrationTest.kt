@@ -1,4 +1,4 @@
-package com.sandbox.jwt.auth
+package com.sandbox.jwt.auth.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.sandbox.jwt.auth.dto.RegisterRequest
@@ -6,8 +6,8 @@ import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
-import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.Matchers.hasItem
+import org.assertj.core.api.Assertions
+import org.hamcrest.Matchers
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
@@ -59,16 +59,16 @@ class AuthControllerRegistrationIntegrationTest {
             status { isCreated() }
             jsonPath("$.id") { isNotEmpty() }
             jsonPath("$.email") { value(request.email) }
-            jsonPath("$.roles") { value(hasItem(Role.USER.name)) }
+            jsonPath("$.roles") { value(Matchers.hasItem(Role.USER.name)) }
             jsonPath("$.password") { doesNotExist() }
         }
 
         // Verify database state
         val userInDb = userRepository.findByEmail(request.email).get()
-        assertThat(userInDb.email).isEqualTo(request.email)
-        assertThat(userInDb.isVerified).isFalse
-        assertThat(userInDb.roles).containsExactly(Role.USER)
-        assertThat(passwordEncoder.matches(request.password, userInDb.passwordHash)).isTrue
+        Assertions.assertThat(userInDb.email).isEqualTo(request.email)
+        Assertions.assertThat(userInDb.isVerified).isFalse
+        Assertions.assertThat(userInDb.roles).containsExactly(Role.USER)
+        Assertions.assertThat(passwordEncoder.matches(request.password, userInDb.passwordHash)).isTrue
 
         // Verify that the mail service was called
         verify(mailService).sendVerificationEmail(userInDb)
@@ -110,7 +110,7 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.email") { value(hasItem("Email cannot be blank.")) }
+            jsonPath("$.errors.email") { value(Matchers.hasItem("Email cannot be blank.")) }
         }
     }
 
@@ -126,7 +126,7 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.email") { value(hasItem("Email format is invalid.")) }
+            jsonPath("$.errors.email") { value(Matchers.hasItem("Email format is invalid.")) }
         }
     }
 
@@ -142,7 +142,7 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.password") { value(hasItem("Password cannot be blank.")) }
+            jsonPath("$.errors.password") { value(Matchers.hasItem("Password cannot be blank.")) }
         }
     }
 
@@ -158,7 +158,7 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.password") { value(hasItem("Password must be between 8 and 30 characters.")) }
+            jsonPath("$.errors.password") { value(Matchers.hasItem("Password must be between 8 and 30 characters.")) }
         }
     }
 
@@ -174,7 +174,7 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.password") { value(hasItem("Password must be between 8 and 30 characters.")) }
+            jsonPath("$.errors.password") { value(Matchers.hasItem("Password must be between 8 and 30 characters.")) }
         }
     }
 
@@ -190,8 +190,8 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.email") { value(hasItem("Email cannot be blank.")) }
-            jsonPath("$.errors.password") { value(hasItem("Password cannot be blank.")) }
+            jsonPath("$.errors.email") { value(Matchers.hasItem("Email cannot be blank.")) }
+            jsonPath("$.errors.password") { value(Matchers.hasItem("Password cannot be blank.")) }
         }
     }
 }

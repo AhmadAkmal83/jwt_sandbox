@@ -1,9 +1,9 @@
-package com.sandbox.jwt.auth
+package com.sandbox.jwt.auth.controller
 
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
-import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.Matchers.hasItem
+import org.assertj.core.api.Assertions
+import org.hamcrest.Matchers
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -53,9 +53,9 @@ class AuthControllerVerificationIntegrationTest {
 
         // Verify database state
         val updatedUser = userRepository.findById(user.id).get()
-        assertThat(updatedUser.isVerified).isTrue
-        assertThat(updatedUser.emailVerificationToken).isNull()
-        assertThat(updatedUser.emailVerificationTokenExpiry).isNull()
+        Assertions.assertThat(updatedUser.isVerified).isTrue
+        Assertions.assertThat(updatedUser.emailVerificationToken).isNull()
+        Assertions.assertThat(updatedUser.emailVerificationTokenExpiry).isNull()
     }
 
     @Test
@@ -65,7 +65,7 @@ class AuthControllerVerificationIntegrationTest {
             .andExpect {
                 status { isUnprocessableEntity() }
                 jsonPath("$.message") { value("The given data was invalid.") }
-                jsonPath("$.errors.token") { value(hasItem("The verification token cannot be blank.")) }
+                jsonPath("$.errors.token") { value(Matchers.hasItem("The verification token cannot be blank.")) }
             }
     }
 
@@ -77,7 +77,7 @@ class AuthControllerVerificationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.token") { value(hasItem("The verification token cannot be blank.")) }
+            jsonPath("$.errors.token") { value(Matchers.hasItem("The verification token cannot be blank.")) }
         }
     }
 
@@ -89,7 +89,7 @@ class AuthControllerVerificationIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.token") { value(hasItem("The verification token format is invalid.")) }
+            jsonPath("$.errors.token") { value(Matchers.hasItem("The verification token format is invalid.")) }
         }
     }
 

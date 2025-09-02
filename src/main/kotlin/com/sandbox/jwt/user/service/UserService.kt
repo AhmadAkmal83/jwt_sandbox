@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service
 class UserService(
     private val userRepository: UserRepository,
 ) {
+
     fun getCurrentUser(): User {
         val principal = SecurityContextHolder.getContext().authentication.principal
 

@@ -23,9 +23,12 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
 import java.util.Optional
+import org.springframework.security.core.userdetails.User as SpringUser
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
@@ -101,7 +104,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `login should return tokens for valid and verified user`() {
+    fun `loginUser should return tokens for valid and verified user`() {
         // Arrange
         val request = LoginRequest("verified_user@example.test", "UserPassword123")
         val user = User(
@@ -122,7 +125,7 @@ class AuthServiceTest {
         whenever(refreshTokenService.createRefreshToken(user)).thenReturn(refreshToken)
 
         // Act
-        val result = authService.login(request)
+        val result = authService.loginUser(request)
 
         // Assert
         assertThat(result.accessToken).isEqualTo(accessToken)
@@ -130,19 +133,19 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `login should throw BadCredentialsException for non-existent email`() {
+    fun `loginUser should throw BadCredentialsException for non-existent email`() {
         // Arrange
         val request = LoginRequest("non_existent@example.test", "UserPassword123")
         whenever(userRepository.findByEmail(request.email)).thenReturn(Optional.empty())
 
         // Act & Assert
-        assertThatThrownBy { authService.login(request) }
+        assertThatThrownBy { authService.loginUser(request) }
             .isInstanceOf(BadCredentialsException::class.java)
             .hasMessage("Invalid email or password.")
     }
 
     @Test
-    fun `login should throw BadCredentialsException for incorrect password of verified user`() {
+    fun `loginUser should throw BadCredentialsException for incorrect password of verified user`() {
         // Arrange
         val request = LoginRequest("verified_user@example.test", "wrong-password")
         val user = User(
@@ -154,13 +157,13 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches(request.password, user.passwordHash)).thenReturn(false)
 
         // Act & Assert
-        assertThatThrownBy { authService.login(request) }
+        assertThatThrownBy { authService.loginUser(request) }
             .isInstanceOf(BadCredentialsException::class.java)
             .hasMessage("Invalid email or password.")
     }
 
     @Test
-    fun `login should throw AccountNotVerifiedException for unverified user`() {
+    fun `loginUser should throw AccountNotVerifiedException for unverified user`() {
         // Arrange
         val request = LoginRequest("unverified_user@example.test", "UserPassword123")
         val user = User(
@@ -172,8 +175,44 @@ class AuthServiceTest {
         whenever(passwordEncoder.matches(request.password, user.passwordHash)).thenReturn(true)
 
         // Act & Assert
-        assertThatThrownBy { authService.login(request) }
+        assertThatThrownBy { authService.loginUser(request) }
             .isInstanceOf(AccountNotVerifiedException::class.java)
             .hasMessage("Account is not verified. Please check your email.")
+    }
+
+    @Test
+    fun `logoutUser should fetch user and call refreshTokenService logout`() {
+        // Arrange
+        val userEmail = "existing_user@example.test"
+        val springUser = SpringUser(userEmail, "UserPassword123", emptyList())
+        val authentication = UsernamePasswordAuthenticationToken(springUser, null)
+        val domainUser = User(email = userEmail, passwordHash = "UserPassword123")
+
+        whenever(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(domainUser))
+
+        // Act
+        authService.logoutUser(authentication)
+
+        // Assert
+        verify(userRepository).findByEmail(userEmail)
+        verify(refreshTokenService).logout(domainUser)
+    }
+
+    @Test
+    fun `logoutUser should throw UsernameNotFoundException if user from token is not found`() {
+        // Arrange
+        val userEmail = "non_existent_user@example.test"
+        val springUser = SpringUser(userEmail, "UserPassword123", emptyList())
+        val authentication = UsernamePasswordAuthenticationToken(springUser, null)
+
+        whenever(userRepository.findByEmail(userEmail)).thenReturn(Optional.empty())
+
+        // Act & Assert
+        assertThatThrownBy { authService.logoutUser(authentication) }
+            .isInstanceOf(UsernameNotFoundException::class.java)
+            .hasMessage("User with email '${userEmail}' was not found.")
+
+        // Verify
+        verify(refreshTokenService, never()).logout(any())
     }
 }

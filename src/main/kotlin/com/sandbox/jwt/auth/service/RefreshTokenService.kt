@@ -37,6 +37,7 @@ class RefreshTokenService(
         return refreshTokenRepository.save(newRefreshToken)
     }
 
+    @Transactional
     fun refreshAccessToken(token: String): String {
         val refreshToken = refreshTokenRepository.findByToken(token)
             .orElseThrow { InvalidVerificationTokenException("The refresh token is invalid.") }
@@ -44,6 +45,11 @@ class RefreshTokenService(
         verifyExpiration(refreshToken)
 
         return jwtService.generateToken(refreshToken.user)
+    }
+
+    @Transactional
+    fun logout(user: User) {
+        refreshTokenRepository.deleteByUser(user)
     }
 
     private fun verifyExpiration(token: RefreshToken) {

@@ -1,4 +1,4 @@
-package com.sandbox.jwt.auth
+package com.sandbox.jwt.auth.controller
 
 import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.LoginResponse
@@ -14,6 +14,7 @@ import com.sandbox.jwt.user.dto.toUserResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -47,7 +48,7 @@ class AuthController(
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
-        val loginResult = authService.login(request)
+        val loginResult = authService.loginUser(request)
         val loginResponse = LoginResponse(
             accessToken = loginResult.accessToken,
             refreshToken = loginResult.refreshToken,
@@ -62,5 +63,13 @@ class AuthController(
         val tokenRefreshResponse = TokenRefreshResponse(accessToken = newAccessToken)
 
         return ResponseEntity.status(HttpStatus.OK).body(tokenRefreshResponse)
+    }
+
+    @PostMapping("/logout")
+    fun logout(authentication: Authentication): ResponseEntity<MessageResponse> {
+        authService.logoutUser(authentication)
+        val messageResponse = MessageResponse("Logged out successfully.")
+
+        return ResponseEntity.status(HttpStatus.OK).body(messageResponse)
     }
 }

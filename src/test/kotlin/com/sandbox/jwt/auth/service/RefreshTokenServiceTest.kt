@@ -157,4 +157,16 @@ class RefreshTokenServiceTest {
         verify(refreshTokenRepository).delete(expiredToken)
         verify(jwtService, never()).generateToken(any())
     }
+
+    @Test
+    fun `logout should call deleteByUser on the repository`() {
+        // Arrange
+        val user = User(id = 1L, email = "existing_user@example.test", passwordHash = "UserPassword123")
+
+        // Act
+        refreshTokenService.logout(user)
+
+        // Assert
+        verify(refreshTokenRepository).deleteByUser(user)
+    }
 }

@@ -12,12 +12,15 @@ import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
 import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import org.springframework.security.core.userdetails.User as SpringUser
 
 @Service
 class AuthService(
@@ -28,7 +31,7 @@ class AuthService(
     private val refreshTokenService: RefreshTokenService,
 ) {
 
-    fun login(request: LoginRequest): LoginResult {
+    fun loginUser(request: LoginRequest): LoginResult {
         val user = userRepository.findByEmail(request.email)
             .orElseThrow { BadCredentialsException("Invalid email or password.") }
 
@@ -45,7 +48,7 @@ class AuthService(
 
         return LoginResult(
             accessToken = accessToken,
-            refreshToken = refreshToken.token
+            refreshToken = refreshToken.token,
         )
     }
 
@@ -90,5 +93,13 @@ class AuthService(
         user.isVerified = true
         user.emailVerificationToken = null
         user.emailVerificationTokenExpiry = null
+    }
+
+    fun logoutUser(authentication: Authentication) {
+        val principal = authentication.principal as SpringUser
+        val user = userRepository.findByEmail(principal.username)
+            .orElseThrow { UsernameNotFoundException("User with email '${principal.username}' was not found.") }
+
+        refreshTokenService.logout(user)
     }
 }
