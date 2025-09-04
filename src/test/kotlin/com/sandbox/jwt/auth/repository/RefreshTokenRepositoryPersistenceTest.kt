@@ -51,7 +51,7 @@ class RefreshTokenRepositoryPersistenceTest {
 
         // Assert
         val retrievedToken = entityManager.find(RefreshToken::class.java, savedToken.id)
-        assertThat(retrievedToken).isNotNull
+        assertThat(retrievedToken).isNotNull()
         assertThat(retrievedToken.id).isEqualTo(savedToken.id)
         assertThat(retrievedToken.user.id).isEqualTo(existingUser.id)
         assertThat(retrievedToken.token).isEqualTo(savedToken.token)
@@ -73,7 +73,7 @@ class RefreshTokenRepositoryPersistenceTest {
         val retrievedTokenOptional = refreshTokenRepository.findByUser(existingUser)
 
         // Assert
-        assertThat(retrievedTokenOptional).isPresent
+        assertThat(retrievedTokenOptional).isPresent()
         assertThat(retrievedTokenOptional.get().token).isEqualTo(tokenValue)
     }
 
@@ -93,7 +93,7 @@ class RefreshTokenRepositoryPersistenceTest {
         val retrievedTokenOptional = refreshTokenRepository.findByToken(tokenValue)
 
         // Assert
-        assertThat(retrievedTokenOptional).isPresent
+        assertThat(retrievedTokenOptional).isPresent()
         assertThat(retrievedTokenOptional.get().user.id).isEqualTo(existingUser.id)
     }
 

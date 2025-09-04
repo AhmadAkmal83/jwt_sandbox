@@ -80,7 +80,7 @@ class AuthControllerLoginIntegrationTest {
 
         // Verify database state
         val refreshTokenInDb = refreshTokenRepository.findByUser(verifiedUser)
-        Assertions.assertThat(refreshTokenInDb).isPresent
+        Assertions.assertThat(refreshTokenInDb).isPresent()
     }
 
     @Test
@@ -142,7 +142,7 @@ class AuthControllerLoginIntegrationTest {
         val responseString = resultAction.andReturn().response.contentAsString
         val firstResponse = objectMapper.readValue(responseString, Map::class.java)
         val firstRefreshToken = firstResponse["refreshToken"] as String
-        Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isPresent
+        Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isPresent()
 
         // Second login Act & Assert
         mockMvc.post(loginEndpointPath) {
@@ -154,7 +154,7 @@ class AuthControllerLoginIntegrationTest {
         }
 
         // Verify database state
-        Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isNotPresent
+        Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isNotPresent()
         Assertions.assertThat(refreshTokenRepository.count()).isEqualTo(1)
     }
 }

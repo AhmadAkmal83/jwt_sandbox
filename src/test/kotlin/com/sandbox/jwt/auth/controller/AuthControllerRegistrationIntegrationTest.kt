@@ -66,9 +66,9 @@ class AuthControllerRegistrationIntegrationTest {
         // Verify database state
         val userInDb = userRepository.findByEmail(request.email).get()
         Assertions.assertThat(userInDb.email).isEqualTo(request.email)
-        Assertions.assertThat(userInDb.isVerified).isFalse
+        Assertions.assertThat(userInDb.isVerified).isFalse()
         Assertions.assertThat(userInDb.roles).containsExactly(Role.USER)
-        Assertions.assertThat(passwordEncoder.matches(request.password, userInDb.passwordHash)).isTrue
+        Assertions.assertThat(passwordEncoder.matches(request.password, userInDb.passwordHash)).isTrue()
 
         // Verify that the mail service was called
         verify(mailService).sendVerificationEmail(userInDb)
@@ -101,7 +101,7 @@ class AuthControllerRegistrationIntegrationTest {
     @Test
     fun `POST register should return 422 Unprocessable Entity for blank email`() {
         // Arrange
-        val request = RegisterRequest("", "ValidPassword123")
+        val request = RegisterRequest(" ", "ValidPassword123")
 
         // Act & Assert
         mockMvc.post(registrationEndpointPath) {
@@ -133,7 +133,7 @@ class AuthControllerRegistrationIntegrationTest {
     @Test
     fun `POST register should return 422 Unprocessable Entity for blank password`() {
         // Arrange
-        val request = RegisterRequest("valid_email@example.test", "")
+        val request = RegisterRequest("valid_email@example.test", " ")
 
         // Act & Assert
         mockMvc.post(registrationEndpointPath) {
@@ -181,7 +181,7 @@ class AuthControllerRegistrationIntegrationTest {
     @Test
     fun `POST register should return 422 Unprocessable Entity with correct errors for multiple errored fields`() {
         // Arrange
-        val request = RegisterRequest("", "")
+        val request = RegisterRequest(" ", " ")
 
         // Act & Assert
         mockMvc.post(registrationEndpointPath) {

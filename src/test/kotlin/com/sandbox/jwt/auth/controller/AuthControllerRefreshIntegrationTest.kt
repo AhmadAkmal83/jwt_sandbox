@@ -116,13 +116,13 @@ class AuthControllerRefreshIntegrationTest {
         }
 
         // Verify database state
-        Assertions.assertThat(refreshTokenRepository.findByToken(expiredRefreshToken.token)).isNotPresent
+        Assertions.assertThat(refreshTokenRepository.findByToken(expiredRefreshToken.token)).isNotPresent()
     }
 
     @Test
     fun `POST refresh should return 422 Unprocessable Entity for a blank refresh token`() {
         // Arrange
-        val request = TokenRefreshRequest(token = "")
+        val request = TokenRefreshRequest(token = " ")
 
         // Act & Assert
         mockMvc.post(refreshEndpointPath) {

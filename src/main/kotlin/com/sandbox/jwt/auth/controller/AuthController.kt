@@ -2,6 +2,7 @@ package com.sandbox.jwt.auth.controller
 
 import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.LoginResponse
+import com.sandbox.jwt.auth.dto.PasswordResetRequest
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.dto.TokenRefreshRequest
 import com.sandbox.jwt.auth.dto.TokenRefreshResponse
@@ -69,6 +70,15 @@ class AuthController(
     fun logout(authentication: Authentication): ResponseEntity<MessageResponse> {
         authService.logoutUser(authentication)
         val messageResponse = MessageResponse("Logged out successfully.")
+
+        return ResponseEntity.status(HttpStatus.OK).body(messageResponse)
+    }
+
+    @PostMapping("/forgot-password")
+    fun forgotPassword(@Valid @RequestBody request: PasswordResetRequest): ResponseEntity<MessageResponse> {
+        authService.initiatePasswordReset(request.email)
+        val messageResponse =
+            MessageResponse("If an account with that email exists, a password reset link has been sent.")
 
         return ResponseEntity.status(HttpStatus.OK).body(messageResponse)
     }

@@ -63,6 +63,7 @@ docker volume rm kotlin-sandbox-jwt-db-data
 - Get Current User: `GET` [http://localhost:9999/api/v1/users/me](http://localhost:9999/api/v1/users/me)
 - Refresh Access Token: `POST` [http://localhost:9999/api/v1/auth/refresh](http://localhost:9999/api/v1/auth/refresh)
 - Logout: `POST` [http://localhost:9999/api/v1/auth/logout](http://localhost:9999/api/v1/auth/logout)
+- Forgot Password: `POST` [http://localhost:9999/api/v1/auth/forgot-password](http://localhost:9999/api/v1/auth/forgot-password)
 
 ---
 
@@ -152,7 +153,7 @@ cd ~
 # If .bash_aliases does not exist, create it
 touch .bash_aliases
 
-# Add the alias
+# Add the alias to .bash_aliases (nano/vim to edit)
 alias docc="docker compose --env-file .docker/.env"
 
 # Or combine changing directory to project's root and the docker compose command
@@ -174,12 +175,12 @@ The collection contains the following endpoints:
 
 - Authentication
     - `POST` `{{baseUrl}}/auth/register`
-    - `GET`  `{{baseUrl}}/auth/verify-email`
+    - `GET` `{{baseUrl}}/auth/verify-email`
     - `POST` `{{baseUrl}}/auth/login`
     - `POST` `{{baseUrl}}/auth/refresh` -> needs variable `refreshToken`
     - `POST` `{{baseUrl}}/auth/logout` -> needs variable `accessToken`
 - Users
-    - `GET`  `{{baseUrl}}/users/me` -> needs variable `accessToken`
+    - `GET` `{{baseUrl}}/users/me` -> needs variable `accessToken`
 
 Ensure variables are set on the top-level directory `JwtSandbox`
 - `baseUrl`: set it to `http://localhost:9999/api/v1` if docker container `jwt-app` is running, or `http://localhost:8080/api/v1` if running development build.
@@ -187,6 +188,6 @@ Ensure variables are set on the top-level directory `JwtSandbox`
 
 ### Download Link
 
-[JwtSandbox Postman Collection](https://drive.google.com/file/d/1E8coYy5aroKNzPWBtF2uKwNjcHzMN7V_/view?usp=sharing)
+[JwtSandbox Postman Collection](https://drive.google.com/file/d/1rXmcPR-bBOBv0D6PHFGwLTyeMx2tubk0/view)
 
 ---

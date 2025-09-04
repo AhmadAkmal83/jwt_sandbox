@@ -39,7 +39,7 @@ class CustomUserDetailsServiceTest {
         val userDetails = customUserDetailsService.loadUserByUsername(userEmail)
 
         // Assert
-        assertThat(userDetails).isNotNull
+        assertThat(userDetails).isNotNull()
         assertThat(userDetails.username).isEqualTo(existingUser.email)
         assertThat(userDetails.password).isEqualTo(existingUser.passwordHash)
         assertThat(userDetails.authorities).containsExactlyInAnyOrder(

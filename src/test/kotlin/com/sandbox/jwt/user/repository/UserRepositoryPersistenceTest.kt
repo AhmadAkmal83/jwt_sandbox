@@ -32,7 +32,7 @@ class UserRepositoryPersistenceTest {
         val retrievedUserOptional = userRepository.findByEmail("existing_user@example.test")
 
         // Assert
-        assertThat(retrievedUserOptional).isPresent
+        assertThat(retrievedUserOptional).isPresent()
         val retrievedUser = retrievedUserOptional.get()
         assertThat(retrievedUser.email).isEqualTo(existingUser.email)
         assertThat(retrievedUser.roles).containsExactly(Role.USER)
@@ -44,7 +44,7 @@ class UserRepositoryPersistenceTest {
         val retrievedUserOptional = userRepository.findByEmail("non_existent_user@example.test")
 
         // Assert
-        assertThat(retrievedUserOptional).isNotPresent
+        assertThat(retrievedUserOptional).isNotPresent()
     }
 
     @Test
@@ -58,7 +58,7 @@ class UserRepositoryPersistenceTest {
         val exists = userRepository.existsByEmail("existing_user@example.test")
 
         // Assert
-        assertThat(exists).isTrue
+        assertThat(exists).isTrue()
     }
 
     @Test
@@ -67,7 +67,7 @@ class UserRepositoryPersistenceTest {
         val exists = userRepository.existsByEmail("non_existent_user@example.test")
 
         // Assert
-        assertThat(exists).isFalse
+        assertThat(exists).isFalse()
     }
 
     @Test
@@ -80,9 +80,9 @@ class UserRepositoryPersistenceTest {
         val retrievedUser = userRepository.findById(savedUser.id).get()
 
         // Assert
-        assertThat(retrievedUser.id).isNotNull
-        assertThat(retrievedUser.createdAt).isNotNull
-        assertThat(retrievedUser.updatedAt).isNotNull
+        assertThat(retrievedUser.id).isNotNull()
+        assertThat(retrievedUser.createdAt).isNotNull()
+        assertThat(retrievedUser.updatedAt).isNotNull()
         assertThat(retrievedUser.createdAt).isEqualTo(retrievedUser.updatedAt)
     }
 }

@@ -10,6 +10,7 @@ import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -76,9 +77,9 @@ class AuthServiceTest {
         assertThat(savedUser.email).isEqualTo(request.email)
         assertThat(savedUser.passwordHash).isEqualTo(encodedPassword)
         assertThat(savedUser.roles).containsExactly(Role.USER)
-        assertThat(savedUser.isVerified).isFalse
-        assertThat(savedUser.emailVerificationToken).isNotNull
-        assertThat(savedUser.emailVerificationTokenExpiry).isNotNull
+        assertThat(savedUser.isVerified).isFalse()
+        assertThat(savedUser.emailVerificationToken).isNotNull()
+        assertThat(savedUser.emailVerificationTokenExpiry).isNotNull()
 
         // Verify email is sent
         verify(mailService).sendVerificationEmail(savedUser)
@@ -150,7 +151,7 @@ class AuthServiceTest {
         val request = LoginRequest("verified_user@example.test", "wrong-password")
         val user = User(
             email = request.email,
-            passwordHash = "encodedPassword",
+            passwordHash = "EncodedUserPassword123",
             isVerified = true
         )
         whenever(userRepository.findByEmail(request.email)).thenReturn(Optional.of(user))
@@ -168,7 +169,7 @@ class AuthServiceTest {
         val request = LoginRequest("unverified_user@example.test", "UserPassword123")
         val user = User(
             email = request.email,
-            passwordHash = "encodedPassword",
+            passwordHash = "EncodedUserPassword123",
             isVerified = false
         )
         whenever(userRepository.findByEmail(request.email)).thenReturn(Optional.of(user))
@@ -184,9 +185,9 @@ class AuthServiceTest {
     fun `logoutUser should fetch user and call refreshTokenService logout`() {
         // Arrange
         val userEmail = "existing_user@example.test"
-        val springUser = SpringUser(userEmail, "UserPassword123", emptyList())
+        val springUser = SpringUser(userEmail, "EncodedUserPassword123", emptyList())
         val authentication = UsernamePasswordAuthenticationToken(springUser, null)
-        val domainUser = User(email = userEmail, passwordHash = "UserPassword123")
+        val domainUser = User(email = userEmail, passwordHash = "EncodedUserPassword123")
 
         whenever(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(domainUser))
 
@@ -202,7 +203,7 @@ class AuthServiceTest {
     fun `logoutUser should throw UsernameNotFoundException if user from token is not found`() {
         // Arrange
         val userEmail = "non_existent_user@example.test"
-        val springUser = SpringUser(userEmail, "UserPassword123", emptyList())
+        val springUser = SpringUser(userEmail, "EncodedUserPassword123", emptyList())
         val authentication = UsernamePasswordAuthenticationToken(springUser, null)
 
         whenever(userRepository.findByEmail(userEmail)).thenReturn(Optional.empty())
@@ -214,5 +215,38 @@ class AuthServiceTest {
 
         // Verify
         verify(refreshTokenService, never()).logout(any())
+    }
+
+    @Test
+    fun `initiatePasswordReset should set token and expiry and send email for existing user`() {
+        // Arrange
+        val userEmail = "existing_user@example.test"
+        val user = User(email = userEmail, passwordHash = "EncodedUserPassword123")
+        whenever(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(user))
+
+        // Act
+        authService.initiatePasswordReset(userEmail)
+
+        // Assert
+        assertThat(user.passwordResetToken).isNotNull()
+        assertThat(user.passwordResetTokenExpiry).isNotNull()
+        assertThat(user.passwordResetTokenExpiry).isAfter(Instant.now())
+
+        verify(mailService).sendPasswordResetEmail(user)
+    }
+
+    @Test
+    fun `initiatePasswordReset should not throw exception or send email for non-existent user`() {
+        // Arrange
+        val nonExistentEmail = "non_existent_user@example.test"
+        whenever(userRepository.findByEmail(nonExistentEmail)).thenReturn(Optional.empty())
+
+        // Act & Assert
+        assertThatCode {
+            authService.initiatePasswordReset(nonExistentEmail)
+        }.doesNotThrowAnyException()
+
+        // Verify
+        verify(mailService, never()).sendPasswordResetEmail(any())
     }
 }

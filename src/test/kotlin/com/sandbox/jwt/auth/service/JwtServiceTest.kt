@@ -112,7 +112,7 @@ class JwtServiceTest {
         val isValid = jwtService.isTokenValid(token, existingUserDetails)
 
         // Assert
-        assertThat(isValid).isTrue
+        assertThat(isValid).isTrue()
     }
 
     @Test
@@ -129,7 +129,7 @@ class JwtServiceTest {
         val isValid = jwtService.isTokenValid(token, otherUserDetails)
 
         // Assert
-        assertThat(isValid).isFalse
+        assertThat(isValid).isFalse()
     }
 
     @Test
@@ -141,7 +141,7 @@ class JwtServiceTest {
         val isValid = jwtService.isTokenValid(expiredToken, existingUserDetails)
 
         // Assert
-        assertThat(isValid).isFalse
+        assertThat(isValid).isFalse()
     }
 
     @Test
@@ -153,7 +153,7 @@ class JwtServiceTest {
         val isExpired = jwtService.isTokenExpired(expiredToken)
 
         // Assert
-        assertThat(isExpired).isTrue
+        assertThat(isExpired).isTrue()
     }
 
     @Test
@@ -165,7 +165,7 @@ class JwtServiceTest {
         val isExpired = jwtService.isTokenExpired(validToken)
 
         // Assert
-        assertThat(isExpired).isFalse
+        assertThat(isExpired).isFalse()
     }
 
     private fun parseTokenClaims(token: String): Claims {

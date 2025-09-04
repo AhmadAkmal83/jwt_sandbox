@@ -75,7 +75,7 @@ class AuthControllerLogoutIntegrationTest {
         }
 
         // Verify database state
-        Assertions.assertThat(refreshTokenRepository.findByUser(existingUser)).isNotPresent
+        Assertions.assertThat(refreshTokenRepository.findByUser(existingUser)).isNotPresent()
     }
 
     @Test

@@ -58,9 +58,6 @@ class MailServiceTest {
         whenever(mailProperties.from).thenReturn(
             MailProperties.From(address = "no-reply@jwt.test", name = "JWT Team")
         )
-        whenever(mailProperties.verification).thenReturn(
-            MailProperties.Verification(url = "http://jwt.test/api/v1/auth/verify-email")
-        )
     }
 
     @AfterEach
@@ -75,6 +72,9 @@ class MailServiceTest {
             email = "new_user@example.test",
             passwordHash = "EncodedUserPassword123",
             emailVerificationToken = UUID.randomUUID().toString(),
+        )
+        whenever(mailProperties.verification).thenReturn(
+            MailProperties.Verification(url = "http://jwt.test/api/v1/auth/verify-email")
         )
 
         // Act
@@ -104,8 +104,11 @@ class MailServiceTest {
         // Arrange
         val newUser = User(email = "new_user@example.test", passwordHash = "EncodedUserPassword123")
         val exceptionMessage = "SMTP server down"
-        whenever(mailSender.send(any<SimpleMailMessage>()))
-            .doThrow(MailSendException(exceptionMessage))
+        whenever(mailProperties.verification).thenReturn(
+            MailProperties.Verification(url = "http://jwt.test/api/v1/auth/verify-email")
+        )
+        doThrow(MailSendException(exceptionMessage))
+            .whenever(mailSender).send(any<SimpleMailMessage>())
 
         // Act & Assert no exception is thrown
         assertThatCode { mailService.sendVerificationEmail(newUser) }.doesNotThrowAnyException()
@@ -116,6 +119,64 @@ class MailServiceTest {
         val logEvent = logsList[0]
         assertThat(logEvent.level).isEqualTo(Level.ERROR)
         assertThat(logEvent.formattedMessage).isEqualTo("Failed to send verification email to ${newUser.email}")
+        assertThat(logEvent.throwableProxy.className).isEqualTo(MailSendException::class.java.name)
+        assertThat(logEvent.throwableProxy.message).isEqualTo(exceptionMessage)
+    }
+
+    @Test
+    fun `sendPasswordResetEmail should log info and construct and send email correctly`() {
+        // Arrange
+        val user = User(
+            email = "existing_user@example.test",
+            passwordHash = "EncodedUserPassword123",
+            passwordResetToken = UUID.randomUUID().toString(),
+        )
+        whenever(mailProperties.passwordReset).thenReturn(
+            MailProperties.PasswordReset(url = "http://jwt.test/reset-password")
+        )
+
+        // Act
+        mailService.sendPasswordResetEmail(user)
+
+        // Assert
+        verify(mailSender).send(messageCaptor.capture())
+        val capturedMessage = messageCaptor.value
+
+        assertThat(capturedMessage.from).isEqualTo(mailProperties.from.address)
+        assertThat(capturedMessage.to).containsExactly(user.email)
+        assertThat(capturedMessage.subject).isEqualTo("Password Reset Request")
+        assertThat(capturedMessage.text).contains(
+            "${mailProperties.passwordReset.url}?token=${user.passwordResetToken}"
+        )
+
+        // Assert the log output
+        val logsList = listAppender.list
+        assertThat(logsList).hasSize(1)
+        val logEvent = logsList[0]
+        assertThat(logEvent.level).isEqualTo(Level.INFO)
+        assertThat(logEvent.formattedMessage).isEqualTo("Password reset email sent successfully to ${user.email}")
+    }
+
+    @Test
+    fun `sendPasswordResetEmail should log error and not throw exception when mail sending fails`() {
+        // Arrange
+        val user = User(email = "existing_user@example.test", passwordHash = "EncodedUserPassword123")
+        val exceptionMessage = "SMTP server down"
+        whenever(mailProperties.passwordReset).thenReturn(
+            MailProperties.PasswordReset(url = "http://jwt.test/reset-password")
+        )
+        doThrow(MailSendException(exceptionMessage))
+            .whenever(mailSender).send(any<SimpleMailMessage>())
+
+        // Act & Assert no exception is thrown
+        assertThatCode { mailService.sendPasswordResetEmail(user) }.doesNotThrowAnyException()
+
+        // Assert the log output
+        val logsList = listAppender.list
+        assertThat(logsList).hasSize(1)
+        val logEvent = logsList[0]
+        assertThat(logEvent.level).isEqualTo(Level.ERROR)
+        assertThat(logEvent.formattedMessage).isEqualTo("Failed to send password reset email to ${user.email}")
         assertThat(logEvent.throwableProxy.className).isEqualTo(MailSendException::class.java.name)
         assertThat(logEvent.throwableProxy.message).isEqualTo(exceptionMessage)
     }

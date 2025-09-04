@@ -53,7 +53,7 @@ class AuthControllerVerificationIntegrationTest {
 
         // Verify database state
         val updatedUser = userRepository.findById(user.id).get()
-        Assertions.assertThat(updatedUser.isVerified).isTrue
+        Assertions.assertThat(updatedUser.isVerified).isTrue()
         Assertions.assertThat(updatedUser.emailVerificationToken).isNull()
         Assertions.assertThat(updatedUser.emailVerificationTokenExpiry).isNull()
     }
@@ -73,7 +73,7 @@ class AuthControllerVerificationIntegrationTest {
     fun `GET verify-email should return 422 Unprocessable Entity when token is blank`() {
         // Act & Assert
         mockMvc.get(verificationEndpointPath) {
-            param("token", "")
+            param("token", " ")
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }

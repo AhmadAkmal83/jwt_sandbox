@@ -45,4 +45,35 @@ class MailService(
             logger.error("Failed to send verification email to ${user.email}", e)
         }
     }
+
+    @Async
+    fun sendPasswordResetEmail(user: User) {
+        val resetUrl = "${mailProperties.passwordReset.url}?token=${user.passwordResetToken}"
+
+        val messageBody = """
+            Hello,
+            
+            A password reset was requested for your account. Please click the link below to reset your password:
+            $resetUrl
+            
+            This link will expire in 1 hour.
+            
+            If you did not request a password reset, please ignore this email.
+            
+            Thanks,
+            JWT Team
+        """.trimIndent()
+
+        try {
+            val message = SimpleMailMessage()
+            message.from = mailProperties.from.address
+            message.setTo(user.email)
+            message.subject = "Password Reset Request"
+            message.text = messageBody
+            mailSender.send(message)
+            logger.info("Password reset email sent successfully to ${user.email}")
+        } catch (e: MailException) {
+            logger.error("Failed to send password reset email to ${user.email}", e)
+        }
+    }
 }

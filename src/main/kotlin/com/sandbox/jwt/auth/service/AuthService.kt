@@ -102,4 +102,17 @@ class AuthService(
 
         refreshTokenService.logout(user)
     }
+
+    @Transactional
+    fun initiatePasswordReset(email: String) {
+        userRepository.findByEmail(email).ifPresent { user ->
+            val resetToken = UUID.randomUUID().toString()
+            val tokenExpiry = Instant.now().plus(1, ChronoUnit.HOURS)
+
+            user.passwordResetToken = resetToken
+            user.passwordResetTokenExpiry = tokenExpiry
+
+            mailService.sendPasswordResetEmail(user)
+        }
+    }
 }

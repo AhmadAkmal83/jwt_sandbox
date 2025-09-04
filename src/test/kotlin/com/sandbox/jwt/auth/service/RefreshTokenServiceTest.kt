@@ -68,7 +68,7 @@ class RefreshTokenServiceTest {
         val savedToken = refreshTokenCaptor.value
         assertThat(result).isEqualTo(savedToken)
         assertThat(savedToken.user).isEqualTo(user)
-        assertThat(savedToken.token).isNotNull
+        assertThat(savedToken.token).isNotNull()
         assertThat(savedToken.expiryDate).isAfter(result.expiryDate.minusMillis(jwtProperties.refreshTokenExpirationMs + 1000))
     }
 
