@@ -50,6 +50,7 @@ class SecurityFilterChainConfig(
                         "/api/v1/auth/verify-email**",
                         "/api/v1/auth/refresh",
                         "/api/v1/auth/forgot-password",
+                        "/api/v1/auth/reset-password",
                     ).permitAll()
                     .anyRequest().authenticated()
             }

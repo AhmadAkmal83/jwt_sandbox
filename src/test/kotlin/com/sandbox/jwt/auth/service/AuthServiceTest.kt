@@ -5,6 +5,9 @@ import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
+import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
+import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
@@ -28,7 +31,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.Optional
+import java.util.UUID
 import org.springframework.security.core.userdetails.User as SpringUser
 
 @ExtendWith(MockitoExtension::class)
@@ -48,6 +53,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var refreshTokenService: RefreshTokenService
+
+    @Mock
+    private lateinit var refreshTokenRepository: RefreshTokenRepository
 
     @InjectMocks
     private lateinit var authService: AuthService
@@ -102,6 +110,101 @@ class AuthServiceTest {
 
         // Verify email is not sent
         verify(mailService, never()).sendVerificationEmail(any())
+    }
+
+    @Test
+    fun `verifyEmail should activate user and clear token for valid, non-expired token`() {
+        // Arrange
+        val verificationToken = UUID.randomUUID().toString()
+        val user = User(
+            email = "unverified_user@example.test",
+            passwordHash = "UserPassword123",
+            isVerified = false,
+            emailVerificationToken = verificationToken,
+            emailVerificationTokenExpiry = Instant.now().plus(1, ChronoUnit.DAYS)
+        )
+        whenever(userRepository.findByEmailVerificationToken(verificationToken)).thenReturn(Optional.of(user))
+
+        // Act
+        authService.verifyEmail(verificationToken)
+
+        // Assert
+        assertThat(user.isVerified).isTrue()
+        assertThat(user.emailVerificationToken).isNull()
+        assertThat(user.emailVerificationTokenExpiry).isNull()
+    }
+
+    @Test
+    fun `verifyEmail should throw InvalidVerificationTokenException for non-existent token`() {
+        // Arrange
+        val nonExistentToken = UUID.randomUUID().toString()
+        whenever(userRepository.findByEmailVerificationToken(nonExistentToken)).thenReturn(Optional.empty())
+
+        // Act & Assert
+        assertThatThrownBy { authService.verifyEmail(nonExistentToken) }
+            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .hasMessage("The verification token is invalid.")
+    }
+
+    @Test
+    fun `verifyEmail should not change already verified user`() {
+        // Arrange
+        val verificationToken = UUID.randomUUID().toString()
+        val verificationTokenExpiry = Instant.now().plus(1, ChronoUnit.DAYS)
+        val user = User(
+            email = "already_verified_user@example.test",
+            passwordHash = "UserPassword123",
+            isVerified = true,
+            emailVerificationToken = verificationToken,
+            emailVerificationTokenExpiry = verificationTokenExpiry
+        )
+        whenever(userRepository.findByEmailVerificationToken(verificationToken)).thenReturn(Optional.of(user))
+
+        // Act
+        authService.verifyEmail(verificationToken)
+
+        // Assert - Ensure verification details idempotency
+        assertThat(user.isVerified).isTrue()
+        assertThat(user.emailVerificationToken).isEqualTo(verificationToken)
+        assertThat(user.emailVerificationTokenExpiry).isEqualTo(verificationTokenExpiry)
+    }
+
+    @Test
+    fun `verifyEmail should throw InvalidVerificationTokenException for token with null expiry`() {
+        // Arrange
+        val verificationToken = UUID.randomUUID().toString()
+        val user = User(
+            email = "unverified_user@example.test",
+            passwordHash = "UserPassword123",
+            isVerified = false,
+            emailVerificationToken = verificationToken,
+            emailVerificationTokenExpiry = null // The invalid state we are testing
+        )
+        whenever(userRepository.findByEmailVerificationToken(verificationToken)).thenReturn(Optional.of(user))
+
+        // Act & Assert
+        assertThatThrownBy { authService.verifyEmail(verificationToken) }
+            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .hasMessage("The verification token is invalid.")
+    }
+
+    @Test
+    fun `verifyEmail should throw VerificationTokenExpiredException for expired token`() {
+        // Arrange
+        val verificationToken = UUID.randomUUID().toString()
+        val user = User(
+            email = "unverified_user@example.test",
+            passwordHash = "UserPassword123",
+            isVerified = false,
+            emailVerificationToken = verificationToken,
+            emailVerificationTokenExpiry = Instant.now().minus(1, ChronoUnit.MINUTES)
+        )
+        whenever(userRepository.findByEmailVerificationToken(verificationToken)).thenReturn(Optional.of(user))
+
+        // Act & Assert
+        assertThatThrownBy { authService.verifyEmail(verificationToken) }
+            .isInstanceOf(VerificationTokenExpiredException::class.java)
+            .hasMessage("The verification token has expired.")
     }
 
     @Test
@@ -248,5 +351,90 @@ class AuthServiceTest {
 
         // Verify
         verify(mailService, never()).sendPasswordResetEmail(any())
+    }
+
+    @Test
+    fun `finalizePasswordReset should update password and clear token for valid token`() {
+        // Arrange
+        val resetToken = UUID.randomUUID().toString()
+        val newPassword = "NewPassword123"
+        val encodedNewPassword = "EncodedNewPassword123"
+        val user = User(
+            email = "existing_user@example.test",
+            passwordHash = "OldEncodedPassword",
+            passwordResetToken = resetToken,
+            passwordResetTokenExpiry = Instant.now().plus(1, ChronoUnit.HOURS)
+        )
+
+        whenever(userRepository.findByPasswordResetToken(resetToken)).thenReturn(Optional.of(user))
+        whenever(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword)
+
+        // Act
+        authService.finalizePasswordReset(resetToken, newPassword)
+
+        // Assert
+        verify(passwordEncoder).encode(newPassword)
+        assertThat(user.passwordHash).isEqualTo(encodedNewPassword)
+        assertThat(user.passwordResetToken).isNull()
+        assertThat(user.passwordResetTokenExpiry).isNull()
+
+        verify(refreshTokenRepository).deleteByUser(user)
+    }
+
+    @Test
+    fun `finalizePasswordReset should throw InvalidVerificationTokenException for non-existent token`() {
+        // Arrange
+        val nonExistentToken = UUID.randomUUID().toString()
+        whenever(userRepository.findByPasswordResetToken(nonExistentToken)).thenReturn(Optional.empty())
+
+        // Act & Assert
+        assertThatThrownBy { authService.finalizePasswordReset(nonExistentToken, "NewPassword123") }
+            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .hasMessage("The password reset token is invalid.")
+
+        verify(passwordEncoder, never()).encode(any())
+        verify(refreshTokenRepository, never()).deleteByUser(any())
+    }
+
+    @Test
+    fun `finalizePasswordReset should throw InvalidVerificationTokenException for token with null expiry`() {
+        // Arrange
+        val resetToken = UUID.randomUUID().toString()
+        val user = User(
+            email = "existing_user@example.test",
+            passwordHash = "OldEncodedPassword",
+            passwordResetToken = resetToken,
+            passwordResetTokenExpiry = null
+        )
+        whenever(userRepository.findByPasswordResetToken(resetToken)).thenReturn(Optional.of(user))
+
+        // Act & Assert
+        assertThatThrownBy { authService.finalizePasswordReset(resetToken, "NewPassword123") }
+            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .hasMessage("The password reset token is invalid.")
+
+        verify(passwordEncoder, never()).encode(any())
+        verify(refreshTokenRepository, never()).deleteByUser(any())
+    }
+
+    @Test
+    fun `finalizePasswordReset should throw VerificationTokenExpiredException for expired token`() {
+        // Arrange
+        val resetToken = UUID.randomUUID().toString()
+        val user = User(
+            email = "existing_user@example.test",
+            passwordHash = "OldEncodedPassword",
+            passwordResetToken = resetToken,
+            passwordResetTokenExpiry = Instant.now().minus(1, ChronoUnit.MINUTES)
+        )
+        whenever(userRepository.findByPasswordResetToken(resetToken)).thenReturn(Optional.of(user))
+
+        // Act & Assert
+        assertThatThrownBy { authService.finalizePasswordReset(resetToken, "NewPassword123") }
+            .isInstanceOf(VerificationTokenExpiredException::class.java)
+            .hasMessage("The password reset token has expired.")
+
+        verify(passwordEncoder, never()).encode(any())
+        verify(refreshTokenRepository, never()).deleteByUser(any())
     }
 }

@@ -6,6 +6,7 @@ import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
 import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
 import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.auth.service.dto.LoginResult
 import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
@@ -29,28 +30,8 @@ class AuthService(
     private val mailService: MailService,
     private val jwtService: JwtService,
     private val refreshTokenService: RefreshTokenService,
+    private val refreshTokenRepository: RefreshTokenRepository,
 ) {
-
-    fun loginUser(request: LoginRequest): LoginResult {
-        val user = userRepository.findByEmail(request.email)
-            .orElseThrow { BadCredentialsException("Invalid email or password.") }
-
-        if (!passwordEncoder.matches(request.password, user.passwordHash)) {
-            throw BadCredentialsException("Invalid email or password.")
-        }
-
-        if (!user.isVerified) {
-            throw AccountNotVerifiedException("Account is not verified. Please check your email.")
-        }
-
-        val accessToken = jwtService.generateToken(user)
-        val refreshToken = refreshTokenService.createRefreshToken(user)
-
-        return LoginResult(
-            accessToken = accessToken,
-            refreshToken = refreshToken.token,
-        )
-    }
 
     @Transactional
     fun registerUser(request: RegisterRequest): User {
@@ -86,13 +67,37 @@ class AuthService(
             return
         }
 
-        if (user.emailVerificationTokenExpiry?.isBefore(Instant.now()) == true) {
+        val expiry = user.emailVerificationTokenExpiry
+            ?: throw InvalidVerificationTokenException("The verification token is invalid.")
+
+        if (expiry.isBefore(Instant.now())) {
             throw VerificationTokenExpiredException("The verification token has expired.")
         }
 
         user.isVerified = true
         user.emailVerificationToken = null
         user.emailVerificationTokenExpiry = null
+    }
+
+    fun loginUser(request: LoginRequest): LoginResult {
+        val user = userRepository.findByEmail(request.email)
+            .orElseThrow { BadCredentialsException("Invalid email or password.") }
+
+        if (!passwordEncoder.matches(request.password, user.passwordHash)) {
+            throw BadCredentialsException("Invalid email or password.")
+        }
+
+        if (!user.isVerified) {
+            throw AccountNotVerifiedException("Account is not verified. Please check your email.")
+        }
+
+        val accessToken = jwtService.generateToken(user)
+        val refreshToken = refreshTokenService.createRefreshToken(user)
+
+        return LoginResult(
+            accessToken = accessToken,
+            refreshToken = refreshToken.token,
+        )
     }
 
     fun logoutUser(authentication: Authentication) {
@@ -114,5 +119,24 @@ class AuthService(
 
             mailService.sendPasswordResetEmail(user)
         }
+    }
+
+    @Transactional
+    fun finalizePasswordReset(token: String, newPassword: String) {
+        val user = userRepository.findByPasswordResetToken(token)
+            .orElseThrow { InvalidVerificationTokenException("The password reset token is invalid.") }
+
+        val expiry = user.passwordResetTokenExpiry
+            ?: throw InvalidVerificationTokenException("The password reset token is invalid.")
+
+        if (expiry.isBefore(Instant.now())) {
+            throw VerificationTokenExpiredException("The password reset token has expired.")
+        }
+
+        user.passwordHash = passwordEncoder.encode(newPassword)
+        user.passwordResetToken = null
+        user.passwordResetTokenExpiry = null
+
+        refreshTokenRepository.deleteByUser(user)
     }
 }

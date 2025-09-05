@@ -1,11 +1,17 @@
-# Spring Boot & Kotlin Sandbox
+# JWT AuthN - Spring Boot & Kotlin Sandbox
 
-Spring Boot sandbox for **Kotlin**, containerized using **Docker** with **PostgreSQL**, **Mailpit**, and **Nginx**.
+**JWT** implementation in a sandbox for **Spring Boot & Kotlin**.
+
+Containerized using **Docker** with **Java 17**, **PostgreSQL**, **Mailpit**, and **Nginx**.
 #### Table of Contents:
-1. **Production Build:** Prerequisites, Environment Variables, Build & Run, Stop, Remove Persistent Data, Web Access, API Access
-2. **Iterative Development:** Prerequisites, Environment Variables, Recommended Setup, Alternate Setup
-3. **Docker Setup:** Containers, Physical Layers, Notes
-4. **Postman Collection:** Description, Download Link
+- **Production Build**
+    - Prerequisites, Environment Variables, Build & Run, Stop, Remove Persistent Data, Web Access, API Access
+- **Iterative Development**
+    - Prerequisites, Environment Variables, Recommended Setup, Alternate Setup
+- **Docker Setup**
+    - Containers, Physical Layers, Notes
+- **Postman Collection**
+    - Description, Endpoints, Variables, Download Link
 
 ---
 
@@ -64,6 +70,7 @@ docker volume rm kotlin-sandbox-jwt-db-data
 - Refresh Access Token: `POST` [http://localhost:9999/api/v1/auth/refresh](http://localhost:9999/api/v1/auth/refresh)
 - Logout: `POST` [http://localhost:9999/api/v1/auth/logout](http://localhost:9999/api/v1/auth/logout)
 - Forgot Password: `POST` [http://localhost:9999/api/v1/auth/forgot-password](http://localhost:9999/api/v1/auth/forgot-password)
+- Reset Password: `POST` [http://localhost:9999/api/v1/auth/reset-password](http://localhost:9999/api/v1/auth/reset-password)
 
 ---
 
@@ -72,19 +79,19 @@ docker volume rm kotlin-sandbox-jwt-db-data
 ### Prerequisites
 
 - JDK - v.17 up to and including v.24 (*Required*)
-- PostgreSQL v.16 (*Required*)
-- Mailpit (*Required*)
-- Docker & Docker Compose (*Optional*)
+- PostgreSQL v.16 `^`
+- Mailpit `^`
+- Docker & Docker Compose `^^`
 
-*Docker & Docker Compose* are required if you want to use the containerized database and mail catcher.
+`^` *PostgreSQL & Mailpit* local installations are required if you do not want to rely on Docker.
 
-If you want do not want to rely on Docker, local installation of *PostgreSQL & Mailpit* will be required.
+`^^` *Docker & Docker Compose* are required if you will rely on the containerized database and mail server.
 
 ### Environment Variables
 
 `application.yaml` is *preloaded with defaults matching `jwt-db` and `jwt-mail` actual credentials on purpose (**against best practices**)* to provide convenient development ability without worrying about project profiles or environment variables.
 
-These variables are passed from docker's environment variables `./docker/.env` through the `jwt-db` container.
+These variables are passed from docker's environment variables `./docker/.env` through the `jwt-app` container.
 
 * `SPRING_PROFILES_ACTIVE` - Spring Boot profile (`dev`)
 * `DB_*` - All variables for database.
@@ -92,7 +99,7 @@ These variables are passed from docker's environment variables `./docker/.env` t
 
 ### Recommended Setup
 
-Use IDE and local JDK for iterative development builds and utilize the containerized database `jwt-db` as a data source and the containerized mail catcher `jwt-mail` to catch all outgoing mail.
+Use IDE and local JDK for iterative development builds and utilize the containerized database `jwt-db` as a data source and the containerized mail server `jwt-mail` to catch all outgoing mail.
 
 1. Run the two containers:
     ```shell
@@ -117,7 +124,7 @@ If you prefer using your own PostgreSQL and Mailpit setup, all the default `DB_*
     - Image: `postgres:16.10-alpine`
     - Does not depend on other containers.
 - **jwt-mail**
-    - Mail container, serving as a catch-all for outgoing mail from `jwt-app`, can be utilized as a standalone mail catcher to support development.
+    - Mail container, serving as a catch-all for outgoing mail from `jwt-app`, can be utilized as a standalone mail server to support development.
     - Dashboard reachable via `http://localhost:8025/mailpit` (standalone) or `http://localhost:9999/mailpit` (when `jwt-app` is up).
     - `MAIL_*` environment variables can be modified in `.docker/.env`
     - Image: `axllent/mailpit:latest`
@@ -147,17 +154,14 @@ All `docker compose` commands require explicitly defining the docker's environme
 Creating an alias is highly recommended in case of frequent issuing of commands.
 
 ```shell
-# Change directory to user's home
-cd ~
+# Ensure .bash_aliases exists, this will not overwrite the file's content if it already exists.
+touch ~/.bash_aliases
 
-# If .bash_aliases does not exist, create it
-touch .bash_aliases
+# Add the alias to .bash_aliases
+echo 'alias docc="docker compose --env-file .docker/.env"' >> ~/.bash_aliases
 
-# Add the alias to .bash_aliases (nano/vim to edit)
-alias docc="docker compose --env-file .docker/.env"
-
-# Or combine changing directory to project's root and the docker compose command
-alias docc="cd ~/path/to/project && docker compose --env-file .docker/.env"
+# OR combine changing directory to project's root and the docker compose command
+echo 'alias docc="cd ~/path/to/project && docker compose --env-file .docker/.env"' >> ~/.bash_aliases
 
 # Source the file to activate the new alias
 source .bash_aliases
@@ -171,23 +175,36 @@ After adding the alias, you will be able to issue commands like `docc ps`, `docc
 
 ### Description
 
-The collection contains the following endpoints: 
+This collection contains all the endpoints needed to manually interact with the application.
 
-- Authentication
-    - `POST` `{{baseUrl}}/auth/register`
-    - `GET` `{{baseUrl}}/auth/verify-email`
-    - `POST` `{{baseUrl}}/auth/login`
-    - `POST` `{{baseUrl}}/auth/refresh` -> needs variable `refreshToken`
-    - `POST` `{{baseUrl}}/auth/logout` -> needs variable `accessToken`
-- Users
-    - `GET` `{{baseUrl}}/users/me` -> needs variable `accessToken`
+Protected endpoints are pre-set with correct authorization type `Bearer Token` and a value that is linked to the variable `accessToken`.
 
-Ensure variables are set on the top-level directory `JwtSandbox`
-- `baseUrl`: set it to `http://localhost:9999/api/v1` if docker container `jwt-app` is running, or `http://localhost:8080/api/v1` if running development build.
-- `accessToken` & `refreshToken` should be set as needed when manually hitting the endpoints.
+### Endpoints
+
+- Authentication:
+    - `POST` `{{baseUrl}}{{apiPath}}/auth/register` *(public)*
+    - `GET` `{{baseUrl}}{{apiPath}}/auth/verify-email` *(public)*
+    - `POST` `{{baseUrl}}{{apiPath}}/auth/login` *(public)*
+    - `POST` `{{baseUrl}}{{apiPath}}/auth/refresh` *(public)*
+    - `POST` `{{baseUrl}}{{apiPath}}/auth/logout` *(protected)*
+    - `POST` `{{baseUrl}}{{apiPath}}/auth/forgot-password` *(public)*
+    - `POST` `{{baseUrl}}{{apiPath}}/auth/reset-password` *(public)*
+- Users:
+    - `GET` `{{baseUrl}}{{apiPath}}/users/me` *(protected)*
+
+### Variables
+
+Variables are set on the top-level directory `JwtSandbox`
+- `baseUrl`: Scheme, host, and port.
+    - `http://localhost:9999` when running `jwt-app` docker container. *Default*
+    - `http://localhost:8080` when running development build.
+- `apiPath`: The API path.
+    - `/api/v1` *Default*
+- `accessToken` The access token.
+    - *Default* is empty, should be set to the received token after hitting `login` or `refresh` endpoints.
 
 ### Download Link
 
-[JwtSandbox Postman Collection](https://drive.google.com/file/d/1rXmcPR-bBOBv0D6PHFGwLTyeMx2tubk0/view)
+[JwtSandbox Postman Collection](https://drive.google.com/file/d/1cVaip9osYJQMimoKtT8U056CnsAnnTzp/view)
 
 ---
