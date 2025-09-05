@@ -4,8 +4,8 @@ import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
-import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
-import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.common.security.exception.InvalidTokenException
+import com.sandbox.jwt.common.security.exception.TokenExpiredException
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.auth.service.dto.LoginResult
 import com.sandbox.jwt.mail.MailService
@@ -61,17 +61,17 @@ class AuthService(
     @Transactional
     fun verifyEmail(token: String) {
         val user = userRepository.findByEmailVerificationToken(token)
-            .orElseThrow { InvalidVerificationTokenException("The verification token is invalid.") }
+            .orElseThrow { InvalidTokenException("The verification token is invalid.") }
 
         if (user.isVerified) {
             return
         }
 
         val expiry = user.emailVerificationTokenExpiry
-            ?: throw InvalidVerificationTokenException("The verification token is invalid.")
+            ?: throw InvalidTokenException("The verification token is invalid.")
 
         if (expiry.isBefore(Instant.now())) {
-            throw VerificationTokenExpiredException("The verification token has expired.")
+            throw TokenExpiredException("The verification token has expired.")
         }
 
         user.isVerified = true
@@ -124,13 +124,13 @@ class AuthService(
     @Transactional
     fun finalizePasswordReset(token: String, newPassword: String) {
         val user = userRepository.findByPasswordResetToken(token)
-            .orElseThrow { InvalidVerificationTokenException("The password reset token is invalid.") }
+            .orElseThrow { InvalidTokenException("The password reset token is invalid.") }
 
         val expiry = user.passwordResetTokenExpiry
-            ?: throw InvalidVerificationTokenException("The password reset token is invalid.")
+            ?: throw InvalidTokenException("The password reset token is invalid.")
 
         if (expiry.isBefore(Instant.now())) {
-            throw VerificationTokenExpiredException("The password reset token has expired.")
+            throw TokenExpiredException("The password reset token has expired.")
         }
 
         user.passwordHash = passwordEncoder.encode(newPassword)

@@ -2,8 +2,8 @@ package com.sandbox.jwt.auth.service
 
 import com.sandbox.jwt.auth.config.JwtProperties
 import com.sandbox.jwt.auth.domain.RefreshToken
-import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
-import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.common.security.exception.InvalidTokenException
+import com.sandbox.jwt.common.security.exception.TokenExpiredException
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import org.springframework.stereotype.Service
@@ -40,7 +40,7 @@ class RefreshTokenService(
     @Transactional
     fun refreshAccessToken(token: String): String {
         val refreshToken = refreshTokenRepository.findByToken(token)
-            .orElseThrow { InvalidVerificationTokenException("The refresh token is invalid.") }
+            .orElseThrow { InvalidTokenException("The refresh token is invalid.") }
 
         verifyExpiration(refreshToken)
 
@@ -55,7 +55,7 @@ class RefreshTokenService(
     private fun verifyExpiration(token: RefreshToken) {
         if (token.expiryDate.isBefore(Instant.now())) {
             refreshTokenRepository.delete(token)
-            throw VerificationTokenExpiredException("Refresh token has expired. Please log in again.")
+            throw TokenExpiredException("Refresh token has expired. Please log in again.")
         }
     }
 }

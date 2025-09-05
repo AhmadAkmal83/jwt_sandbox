@@ -5,8 +5,8 @@ import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
-import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
-import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.common.security.exception.InvalidTokenException
+import com.sandbox.jwt.common.security.exception.TokenExpiredException
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
@@ -142,7 +142,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThatThrownBy { authService.verifyEmail(nonExistentToken) }
-            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .isInstanceOf(InvalidTokenException::class.java)
             .hasMessage("The verification token is invalid.")
     }
 
@@ -184,7 +184,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThatThrownBy { authService.verifyEmail(verificationToken) }
-            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .isInstanceOf(InvalidTokenException::class.java)
             .hasMessage("The verification token is invalid.")
     }
 
@@ -203,7 +203,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThatThrownBy { authService.verifyEmail(verificationToken) }
-            .isInstanceOf(VerificationTokenExpiredException::class.java)
+            .isInstanceOf(TokenExpiredException::class.java)
             .hasMessage("The verification token has expired.")
     }
 
@@ -389,7 +389,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThatThrownBy { authService.finalizePasswordReset(nonExistentToken, "NewPassword123") }
-            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .isInstanceOf(InvalidTokenException::class.java)
             .hasMessage("The password reset token is invalid.")
 
         verify(passwordEncoder, never()).encode(any())
@@ -410,7 +410,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThatThrownBy { authService.finalizePasswordReset(resetToken, "NewPassword123") }
-            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .isInstanceOf(InvalidTokenException::class.java)
             .hasMessage("The password reset token is invalid.")
 
         verify(passwordEncoder, never()).encode(any())
@@ -431,7 +431,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThatThrownBy { authService.finalizePasswordReset(resetToken, "NewPassword123") }
-            .isInstanceOf(VerificationTokenExpiredException::class.java)
+            .isInstanceOf(TokenExpiredException::class.java)
             .hasMessage("The password reset token has expired.")
 
         verify(passwordEncoder, never()).encode(any())

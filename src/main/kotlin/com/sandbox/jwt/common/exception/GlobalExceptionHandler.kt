@@ -2,8 +2,8 @@ package com.sandbox.jwt.common.exception
 
 import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
-import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
-import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.common.security.exception.InvalidTokenException
+import com.sandbox.jwt.common.security.exception.TokenExpiredException
 import com.sandbox.jwt.common.exception.dto.ErrorResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -46,14 +46,14 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body)
     }
 
-    @ExceptionHandler(InvalidVerificationTokenException::class)
-    fun handleInvalidVerificationTokenException(ex: InvalidVerificationTokenException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(InvalidTokenException::class)
+    fun handleInvalidVerificationTokenException(ex: InvalidTokenException): ResponseEntity<ErrorResponse> {
         val body = buildSimpleErrorResponse(ex.message, "The provided token is invalid.")
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }
 
-    @ExceptionHandler(VerificationTokenExpiredException::class)
-    fun handleVerificationTokenExpiredException(ex: VerificationTokenExpiredException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(TokenExpiredException::class)
+    fun handleVerificationTokenExpiredException(ex: TokenExpiredException): ResponseEntity<ErrorResponse> {
         val body = buildSimpleErrorResponse(ex.message, "The provided token has expired.")
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }

@@ -2,8 +2,8 @@ package com.sandbox.jwt.auth.service
 
 import com.sandbox.jwt.auth.config.JwtProperties
 import com.sandbox.jwt.auth.domain.RefreshToken
-import com.sandbox.jwt.auth.exception.InvalidVerificationTokenException
-import com.sandbox.jwt.auth.exception.VerificationTokenExpiredException
+import com.sandbox.jwt.common.security.exception.InvalidTokenException
+import com.sandbox.jwt.common.security.exception.TokenExpiredException
 import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import org.assertj.core.api.Assertions.assertThat
@@ -130,7 +130,7 @@ class RefreshTokenServiceTest {
 
         // Act & Assert
         assertThatThrownBy { refreshTokenService.refreshAccessToken(nonExistentToken) }
-            .isInstanceOf(InvalidVerificationTokenException::class.java)
+            .isInstanceOf(InvalidTokenException::class.java)
             .hasMessage("The refresh token is invalid.")
 
         verify(jwtService, never()).generateToken(any())
@@ -150,7 +150,7 @@ class RefreshTokenServiceTest {
 
         // Act & Assert
         assertThatThrownBy { refreshTokenService.refreshAccessToken(expiredTokenString) }
-            .isInstanceOf(VerificationTokenExpiredException::class.java)
+            .isInstanceOf(TokenExpiredException::class.java)
             .hasMessage("Refresh token has expired. Please log in again.")
 
         // Verify
