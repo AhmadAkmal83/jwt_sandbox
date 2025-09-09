@@ -5,9 +5,9 @@ import com.sandbox.jwt.auth.dto.LoginRequest
 import com.sandbox.jwt.auth.dto.RegisterRequest
 import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
+import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.common.security.exception.InvalidTokenException
 import com.sandbox.jwt.common.security.exception.TokenExpiredException
-import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.mail.MailService
 import com.sandbox.jwt.user.domain.Role
 import com.sandbox.jwt.user.domain.User
@@ -135,7 +135,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `verifyEmail should throw InvalidVerificationTokenException for non-existent token`() {
+    fun `verifyEmail should throw InvalidTokenException for non-existent token`() {
         // Arrange
         val nonExistentToken = UUID.randomUUID().toString()
         whenever(userRepository.findByEmailVerificationToken(nonExistentToken)).thenReturn(Optional.empty())
@@ -170,7 +170,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `verifyEmail should throw InvalidVerificationTokenException for token with null expiry`() {
+    fun `verifyEmail should throw InvalidTokenException for token with null expiry`() {
         // Arrange
         val verificationToken = UUID.randomUUID().toString()
         val user = User(
@@ -189,7 +189,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `verifyEmail should throw VerificationTokenExpiredException for expired token`() {
+    fun `verifyEmail should throw TokenExpiredException for expired token`() {
         // Arrange
         val verificationToken = UUID.randomUUID().toString()
         val user = User(
@@ -382,7 +382,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `finalizePasswordReset should throw InvalidVerificationTokenException for non-existent token`() {
+    fun `finalizePasswordReset should throw InvalidTokenException for non-existent token`() {
         // Arrange
         val nonExistentToken = UUID.randomUUID().toString()
         whenever(userRepository.findByPasswordResetToken(nonExistentToken)).thenReturn(Optional.empty())
@@ -397,7 +397,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `finalizePasswordReset should throw InvalidVerificationTokenException for token with null expiry`() {
+    fun `finalizePasswordReset should throw InvalidTokenException for token with null expiry`() {
         // Arrange
         val resetToken = UUID.randomUUID().toString()
         val user = User(
@@ -418,7 +418,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `finalizePasswordReset should throw VerificationTokenExpiredException for expired token`() {
+    fun `finalizePasswordReset should throw TokenExpiredException for expired token`() {
         // Arrange
         val resetToken = UUID.randomUUID().toString()
         val user = User(

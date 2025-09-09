@@ -2,9 +2,9 @@ package com.sandbox.jwt.auth.service
 
 import com.sandbox.jwt.auth.config.JwtProperties
 import com.sandbox.jwt.auth.domain.RefreshToken
+import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.common.security.exception.InvalidTokenException
 import com.sandbox.jwt.common.security.exception.TokenExpiredException
-import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -123,7 +123,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    fun `refreshAccessToken should throw InvalidVerificationTokenException for non-existent token`() {
+    fun `refreshAccessToken should throw InvalidTokenException for non-existent token`() {
         // Arrange
         val nonExistentToken = UUID.randomUUID().toString()
         whenever(refreshTokenRepository.findByToken(nonExistentToken)).thenReturn(Optional.empty())
@@ -137,7 +137,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    fun `refreshAccessToken should throw VerificationTokenExpiredException and delete token when expired`() {
+    fun `refreshAccessToken should throw TokenExpiredException and delete token when expired`() {
         // Arrange
         val user = User(id = 1L, email = "existing_user@example.test", passwordHash = "UserPassword123")
         val expiredTokenString = UUID.randomUUID().toString()

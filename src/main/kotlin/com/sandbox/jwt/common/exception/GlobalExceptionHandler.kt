@@ -2,9 +2,9 @@ package com.sandbox.jwt.common.exception
 
 import com.sandbox.jwt.auth.exception.AccountNotVerifiedException
 import com.sandbox.jwt.auth.exception.EmailAlreadyExistsException
+import com.sandbox.jwt.common.exception.dto.ErrorResponse
 import com.sandbox.jwt.common.security.exception.InvalidTokenException
 import com.sandbox.jwt.common.security.exception.TokenExpiredException
-import com.sandbox.jwt.common.exception.dto.ErrorResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -47,13 +47,13 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidTokenException::class)
-    fun handleInvalidVerificationTokenException(ex: InvalidTokenException): ResponseEntity<ErrorResponse> {
+    fun handleInvalidTokenException(ex: InvalidTokenException): ResponseEntity<ErrorResponse> {
         val body = buildSimpleErrorResponse(ex.message, "The provided token is invalid.")
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }
 
     @ExceptionHandler(TokenExpiredException::class)
-    fun handleVerificationTokenExpiredException(ex: TokenExpiredException): ResponseEntity<ErrorResponse> {
+    fun handleTokenExpiredException(ex: TokenExpiredException): ResponseEntity<ErrorResponse> {
         val body = buildSimpleErrorResponse(ex.message, "The provided token has expired.")
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }
