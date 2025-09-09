@@ -197,4 +197,34 @@ class AuthControllerResetPasswordIntegrationTest {
             jsonPath("$.errors.newPassword") { value(Matchers.hasItem("New password cannot be blank.")) }
         }
     }
+
+    @Test
+    fun `POST reset-password should return 400 Bad Request for missing token field`() {
+        // Arrange
+        val plainRequest = """{"newPassword": "NewPassword123"}"""
+
+        // Act & Assert
+        mockMvc.post(resetPasswordEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
+        }
+    }
+
+    @Test
+    fun `POST reset-password should return 400 Bad Request for missing newPassword field`() {
+        // Arrange
+        val plainRequest = """{"token": "${UUID.randomUUID()}"}"""
+
+        // Act & Assert
+        mockMvc.post(resetPasswordEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
+        }
+    }
 }

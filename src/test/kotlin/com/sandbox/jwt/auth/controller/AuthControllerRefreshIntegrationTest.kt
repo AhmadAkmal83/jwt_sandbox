@@ -7,6 +7,7 @@ import com.sandbox.jwt.auth.repository.RefreshTokenRepository
 import com.sandbox.jwt.user.domain.User
 import com.sandbox.jwt.user.repository.UserRepository
 import org.assertj.core.api.Assertions
+import org.hamcrest.Matchers
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -131,7 +132,38 @@ class AuthControllerRefreshIntegrationTest {
         }.andExpect {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
-            jsonPath("$.errors.token") { value("Refresh token cannot be blank.") }
+            jsonPath("$.errors.token") { value(Matchers.hasItem("Refresh token cannot be blank.")) }
+        }
+    }
+
+    @Test
+    fun `POST refresh should return 422 Unprocessable Entity for invalid token format`() {
+        // Arrange
+        val request = TokenRefreshRequest(token = "invalid-token-format")
+
+        // Act & Assert
+        mockMvc.post(refreshEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isUnprocessableEntity() }
+            jsonPath("$.message") { value("The given data was invalid.") }
+            jsonPath("$.errors.token") { value(Matchers.hasItem("The refresh token format is invalid.")) }
+        }
+    }
+
+    @Test
+    fun `POST refresh should return 400 Bad Request for missing token field`() {
+        // Arrange
+        val plainRequest = "{}"
+
+        // Act & Assert
+        mockMvc.post(refreshEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
         }
     }
 }

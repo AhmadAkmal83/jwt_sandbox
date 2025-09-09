@@ -58,17 +58,17 @@ class AuthControllerRegistrationIntegrationTest {
         }.andExpect {
             status { isCreated() }
             jsonPath("$.id") { isNotEmpty() }
-            jsonPath("$.email") { value(request.email) }
+            jsonPath("$.email") { value("new_user@example.test") }
             jsonPath("$.roles") { value(Matchers.hasItem(Role.USER.name)) }
             jsonPath("$.password") { doesNotExist() }
         }
 
         // Verify database state
-        val userInDb = userRepository.findByEmail(request.email).get()
-        Assertions.assertThat(userInDb.email).isEqualTo(request.email)
+        val userInDb = userRepository.findByEmail("new_user@example.test").get()
+        Assertions.assertThat(userInDb.email).isEqualTo("new_user@example.test")
         Assertions.assertThat(userInDb.isVerified).isFalse()
         Assertions.assertThat(userInDb.roles).containsExactly(Role.USER)
-        Assertions.assertThat(passwordEncoder.matches(request.password, userInDb.passwordHash)).isTrue()
+        Assertions.assertThat(passwordEncoder.matches("UserPassword123", userInDb.passwordHash)).isTrue()
 
         // Verify that the mail service was called
         verify(mailService).sendVerificationEmail(userInDb)
@@ -192,6 +192,36 @@ class AuthControllerRegistrationIntegrationTest {
             jsonPath("$.message") { value("The given data was invalid.") }
             jsonPath("$.errors.email") { value(Matchers.hasItem("Email cannot be blank.")) }
             jsonPath("$.errors.password") { value(Matchers.hasItem("Password cannot be blank.")) }
+        }
+    }
+
+    @Test
+    fun `POST register should return 400 Bad Request for missing email field`() {
+        // Arrange
+        val plainRequest = """{"password": "UserPassword123"}"""
+
+        // Act & Assert
+        mockMvc.post(registrationEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
+        }
+    }
+
+    @Test
+    fun `POST register should return 400 Bad Request for missing password field`() {
+        // Arrange
+        val plainRequest = """{"email": "new_user@example.test"}"""
+
+        // Act & Assert
+        mockMvc.post(registrationEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
         }
     }
 }

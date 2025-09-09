@@ -18,7 +18,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.springframework.transaction.annotation.Transactional
-import kotlin.collections.get
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -156,5 +155,35 @@ class AuthControllerLoginIntegrationTest {
         // Verify database state
         Assertions.assertThat(refreshTokenRepository.findByToken(firstRefreshToken)).isNotPresent()
         Assertions.assertThat(refreshTokenRepository.count()).isEqualTo(1)
+    }
+
+    @Test
+    fun `POST login should return 400 Bad Request for missing email field`() {
+        // Arrange
+        val plainRequest = """{"password": "UserPassword123"}"""
+
+        // Act & Assert
+        mockMvc.post(loginEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
+        }
+    }
+
+    @Test
+    fun `POST login should return 400 Bad Request for missing password field`() {
+        // Arrange
+        val plainRequest = """{"email": "verified_user@example.test"}"""
+
+        // Act & Assert
+        mockMvc.post(loginEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
+        }
     }
 }

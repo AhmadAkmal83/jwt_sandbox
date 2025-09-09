@@ -73,7 +73,7 @@ class AuthControllerForgotPasswordIntegrationTest {
         }
 
         // Verify database state
-        val updatedUser = userRepository.findByEmail(existingUser.email).get()
+        val updatedUser = userRepository.findByEmail("existing_user@example.test").get()
         assertThat(updatedUser.passwordResetToken).isNotNull()
         assertThat(updatedUser.passwordResetTokenExpiry).isNotNull()
 
@@ -129,6 +129,21 @@ class AuthControllerForgotPasswordIntegrationTest {
             status { isUnprocessableEntity() }
             jsonPath("$.message") { value("The given data was invalid.") }
             jsonPath("$.errors.email") { value(Matchers.hasItem("Email format is invalid.")) }
+        }
+    }
+
+    @Test
+    fun `POST forgot-password should return 400 Bad Request for missing email field`() {
+        // Arrange
+        val plainRequest = "{}"
+
+        // Act & Assert
+        mockMvc.post(forgotPasswordEndpointPath) {
+            contentType = MediaType.APPLICATION_JSON
+            content = plainRequest
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.message") { value("Request is missing required fields.") }
         }
     }
 }
